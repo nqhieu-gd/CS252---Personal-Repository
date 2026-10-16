@@ -1,6 +1,7 @@
 # Exercise 3: Individual Proposal for Course Project
 
-**Student**: Nguyen Quang Hieu - 25125043 
+**Student**: Nguyen Quang Hieu - 25125043
+
 **Project Title:** Pokémon Champion AI Assistant: Context-Aware Team Building & Dynamic Meta Counter-Strategist  
 
 ---
