@@ -1,5 +1,7 @@
 # Week 1 - Exercise 1: Team Formation
 
+**Student**: Nguyen Quang Hieu - 25125043 
+
 | No. | Student ID | Full Name | Role in the project |
 | :---: | :---: | :--- | :--- |
 | 1 | 25125074 | Nguyễn Anh Kiệt | Leader |
