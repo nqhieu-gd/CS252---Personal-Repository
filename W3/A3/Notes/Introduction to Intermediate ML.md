@@ -1,0 +1,3 @@
+* This course builds upon the foundational concepts of machine learning (like Random Forests and Model Validation).
+* You will learn how to tackle real-world data challenges: missing values, non-numeric data (categorical variables), pipelines, cross-validation, XGBoost, and data leakage.
+* A baseline model can be evaluated using `mean_absolute_error(y_valid, preds)` by comparing multiple Random Forest configurations (`n_estimators`, `criterion`, `max_depth`).
