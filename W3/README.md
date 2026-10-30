@@ -7,6 +7,6 @@
 
 ---
 
-**Declaration A: I did not use AI for this homework. Although I did look up for Panda syntax online. Otherwise, this week's homework was done entirely by myself, including the notes and the source codes.**
-
 ## AI Usage Declaration
+
+**Declaration B: I did use AI for this homework. I needed AI's assistant for Panda syntax and csv file format. Otherwise, this week's homework was done by myself, including the notes and the source codes.**
