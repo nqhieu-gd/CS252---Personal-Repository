@@ -92,6 +92,22 @@ SAMPLE_DESTINATIONS: List[Dict[str, Any]] = [
             "unesco_heritage_sites": 1,
         },
     },
+    {
+        "id": "bangkok",
+        "badge": "Southeast Asia Hub",
+        "country": "Thailand",
+        "data": {
+            "name": "Bangkok",
+            "description": "Thailand's vibrant capital famous for ornate royal temples, floating markets, tuk-tuk rides, and award-winning street food.",
+            "attractions": "Grand Palace, Wat Arun, Wat Pho, Chatuchak Weekend Market, Chao Phraya River",
+            "food_specialties": "Pad Thai, Tom Yum Goong, Mango Sticky Rice, Som Tum (Green Papaya Salad), Thai Iced Tea",
+            "best_time_to_visit": "November to February when humidity is lower and evenings are pleasant",
+            "local_tip": "Use the BTS Skytrain and Chao Phraya Express Boat to bypass downtown traffic jams.",
+            "avg_daily_budget_usd": 55,
+            "visitor_rating": 4.8,
+            "unesco_heritage_sites": 0,
+        },
+    },
 ]
 
 # Section 6, Example 1: Hotel Review Translation System

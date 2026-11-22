@@ -406,9 +406,9 @@ To satisfy the **Video Demonstration** rubric item cleanly in a single take:
 
 ## 9. Final Submission Checklist (`W7/`)
 
-- [ ] **Explanation (`.md` + `.pdf`):** `W7/docs/Lab07_Explanation_and_AI_Declaration.md` and `.pdf`
-- [ ] **AI Usage Declaration (`.md` + `.pdf`):** Included clearly in both `.md` and `.pdf`
-- [ ] **Complete Source Code:** `W7/WanderLingo/` (cleanly excluding `.venv/`, `node_modules/`, `dist/`)
-- [ ] **Git Commit History:** Exported to `W7/Git_Commit_History.md`
-- [ ] **Video Demonstration:** Recorded and linked/stored per course submission instructions
-- [ ] **Automated Verification Passing:** Backend `pytest -v`, Frontend `npx.cmd tsc --noEmit`, `npm.cmd test`, and `npm.cmd run build`
+- [x] **Explanation (`.md` + `.pdf`):** `W7/docs/Lab07_Explanation_and_AI_Declaration.md` and `.pdf`
+- [x] **AI Usage Declaration (`.md` + `.pdf`):** Included clearly in both `.md` and `.pdf`
+- [x] **Complete Source Code:** `W7/WanderLingo/` (cleanly excluding `.venv/`, `node_modules/`, `dist/`)
+- [x] **Git Commit History:** Exported to `W7/Git_Commit_History.md` and `W7/Git_Commit_History.pdf`
+- [x] **Video Demonstration Guide:** Step-by-step walkthrough script documented in `W7/README.md` (Section 4)
+- [x] **Automated Verification Passing:** Backend `pytest -v` (15/15 passed), Frontend `npx.cmd tsc --noEmit`, `npm.cmd test` (3/3 passed), and `npm.cmd run build`
