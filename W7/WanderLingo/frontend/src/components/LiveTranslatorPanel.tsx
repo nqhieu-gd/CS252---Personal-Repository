@@ -185,9 +185,9 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
       {/* Two-Column Source & Output Panes */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Source Text Pane */}
-        <div className="flex flex-col justify-between rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 shadow-xs">
+        <div className="flex flex-col justify-between rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-xs">
           <div>
-            <div className="mb-2 flex items-center justify-between text-xs text-[var(--text-muted)]">
+            <div className="mb-2 flex items-center justify-between text-sm text-[var(--text-muted)]">
               <span className="font-semibold uppercase tracking-wider">
                 {t('sourceLanguage')}
               </span>
@@ -201,7 +201,7 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder={t('inputPlaceholder')}
-              className="w-full resize-none rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-3.5 text-sm leading-relaxed text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] sm:text-base"
+              className="w-full resize-none rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-4 text-base leading-relaxed text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] sm:text-lg"
             />
           </div>
 
@@ -211,7 +211,7 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
                 type="button"
                 disabled={isTranslating || !inputText.trim()}
                 onClick={() => void runTranslate()}
-                className="flex items-center gap-2 rounded-xl bg-[var(--accent-primary)] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 sm:text-sm"
+                className="flex items-center gap-2 rounded-xl bg-[var(--accent-primary)] px-5 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 sm:text-base"
               >
                 <Sparkles className="h-4 w-4" />
                 <span>{isTranslating ? t('translatingBtn') : t('translateNowBtn')}</span>
@@ -221,7 +221,7 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
                 type="button"
                 disabled={isDetecting || !inputText.trim()}
                 onClick={() => void runDetectOnly()}
-                className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3.5 py-2.5 text-xs font-semibold text-[var(--text-primary)] transition hover:border-[var(--accent-primary)] disabled:opacity-50 sm:text-sm"
+                className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)] transition hover:border-[var(--accent-primary)] disabled:opacity-50 sm:text-base"
               >
                 <span>{isDetecting ? t('detectingBtn') : t('detectOnlyBtn')}</span>
               </button>
@@ -235,16 +235,16 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
                   setResult(null);
                   setDetectionOnly(null);
                 }}
-                className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--text-muted)] hover:bg-[var(--bg-surface-muted)] hover:text-[var(--text-primary)]"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--bg-surface-muted)] hover:text-[var(--text-primary)]"
               >
                 {t('clearTextBtn')}
               </button>
             )}
           </div>
 
-          {/* Standalone Language Detection Result Card (Tutorial Sec. 4) */}
+          {/* Standalone Language Detection Result Card */}
           {detectionOnly && (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--accent-soft)] px-3.5 py-2.5 text-xs">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--accent-soft)] px-4 py-3 text-sm">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-[var(--accent-primary)]">
                   {t('detectedSourceBadge')}:
@@ -253,7 +253,7 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
                   {detectionOnly.lang_name} ({detectionOnly.lang})
                 </span>
               </div>
-              <div className="flex items-center gap-2 font-mono text-[11px]">
+              <div className="flex items-center gap-2 font-mono text-xs">
                 <span>
                   {t('confidenceBadge')}:{' '}
                   <strong>
@@ -270,26 +270,26 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
         </div>
 
         {/* Target Output Pane */}
-        <div className="flex flex-col justify-between rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 shadow-xs">
+        <div className="flex flex-col justify-between rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-xs">
           <div>
-            <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                   {t('targetLanguage')}
                 </span>
                 {result && (
                   <>
-                    <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-0.5 font-semibold text-[var(--accent-primary)]">
+                    <span className="rounded-full bg-[var(--accent-soft)] px-3 py-0.5 font-semibold text-[var(--accent-primary)]">
                       {result.src_name} ({result.src}) → {result.dest_name} ({result.dest})
                     </span>
                     <span
-                      className={`flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ${
+                      className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 font-medium ${
                         result.cached
                           ? 'bg-[var(--status-good-bg)] text-[var(--status-good-text)]'
                           : 'bg-[var(--bg-surface-muted)] text-[var(--text-secondary)]'
                       }`}
                     >
-                      <Zap className="h-3 w-3" />
+                      <Zap className="h-3.5 w-3.5" />
                       {result.cached ? t('cachedBadge') : t('liveApiBadge')} ({result.latency_ms} ms)
                     </span>
                   </>
@@ -301,24 +301,24 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
                   <button
                     type="button"
                     onClick={() => handleSpeak(result.text, result.dest)}
-                    className="flex items-center gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-2.5 py-1 text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent-primary)]"
+                    className="flex items-center gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3 py-1.5 text-sm font-medium text-[var(--text-primary)] hover:border-[var(--accent-primary)]"
                   >
-                    <Volume2 className="h-3.5 w-3.5" />
+                    <Volume2 className="h-4 w-4" />
                     <span>{t('speakBtn')}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => void handleCopy(result.text)}
-                    className="flex items-center gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-2.5 py-1 text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent-primary)]"
+                    className="flex items-center gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3 py-1.5 text-sm font-medium text-[var(--text-primary)] hover:border-[var(--accent-primary)]"
                   >
                     {copied ? (
                       <>
-                        <Check className="h-3.5 w-3.5 text-emerald-500" />
+                        <Check className="h-4 w-4 text-emerald-500" />
                         <span>{t('copiedBtn')}</span>
                       </>
                     ) : (
                       <>
-                        <Copy className="h-3.5 w-3.5" />
+                        <Copy className="h-4 w-4" />
                         <span>{t('copyBtn')}</span>
                       </>
                     )}
@@ -327,7 +327,7 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
               )}
             </div>
 
-            <div className="min-h-[156px] rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-3.5 text-sm leading-relaxed text-[var(--text-primary)] sm:text-base">
+            <div className="min-h-[168px] rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-4 text-base leading-relaxed text-[var(--text-primary)] sm:text-lg">
               {result ? (
                 <p className="whitespace-pre-wrap font-medium">{result.text}</p>
               ) : (
@@ -341,17 +341,17 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
           {/* Pronunciation / Romanization & Skipped Badges */}
           <div className="mt-3 space-y-2">
             {result?.skipped && (
-              <div className="rounded-xl bg-[var(--status-caution-bg)] px-3 py-2 text-xs font-semibold text-[var(--status-caution-text)]">
+              <div className="rounded-xl bg-[var(--status-caution-bg)] px-3.5 py-2.5 text-sm font-semibold text-[var(--status-caution-text)]">
                 {t('skippedSameLangBadge')}
               </div>
             )}
 
             {result?.pronunciation && (
-              <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3.5 py-2.5 text-xs">
+              <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-4 py-3 text-sm">
                 <div className="font-semibold uppercase tracking-wider text-[var(--accent-primary)]">
                   {t('pronunciationLabel')}
                 </div>
-                <div className="mt-0.5 font-mono text-sm text-[var(--text-primary)]">
+                <div className="mt-1 font-mono text-base text-[var(--text-primary)]">
                   {result.pronunciation}
                 </div>
               </div>
@@ -362,20 +362,20 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
 
       {/* Quick Travel Phrasebook Chips */}
       {phrasebook.length > 0 && (
-        <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 shadow-xs">
+        <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-xs">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)]">
-              <BookOpen className="h-4 w-4 text-[var(--accent-primary)]" />
+            <div className="flex items-center gap-2 text-base font-bold text-[var(--text-primary)]">
+              <BookOpen className="h-5 w-5 text-[var(--accent-primary)]" />
               <span>{t('phrasebookTitle')}</span>
             </div>
 
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {phrasebook.map((cat) => (
                 <button
                   key={cat.category}
                   type="button"
                   onClick={() => setActiveCategory(cat.category)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
                     activeCategory === cat.category
                       ? 'bg-[var(--accent-primary)] text-white'
                       : 'bg-[var(--bg-surface-muted)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -387,7 +387,7 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2.5">
             {currentPhraseCategory?.phrases.map((phrase, idx) => (
               <button
                 key={idx}
@@ -396,7 +396,7 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
                   setInputText(phrase);
                   void runTranslate(phrase);
                 }}
-                className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3 py-2 text-left text-xs font-medium text-[var(--text-primary)] transition hover:border-[var(--accent-primary)] hover:bg-[var(--accent-soft)]"
+                className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3.5 py-2.5 text-left text-sm font-medium text-[var(--text-primary)] transition hover:border-[var(--accent-primary)] hover:bg-[var(--accent-soft)] sm:text-base"
               >
                 “{phrase}”
               </button>
@@ -406,10 +406,10 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
       )}
 
       {/* Local Session Translation History */}
-      <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 shadow-xs">
+      <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-xs">
         <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)]">
-            <History className="h-4 w-4 text-[var(--accent-primary)]" />
+          <div className="flex items-center gap-2 text-base font-bold text-[var(--text-primary)]">
+            <History className="h-5 w-5 text-[var(--accent-primary)]" />
             <span>
               {t('historyTitle')} ({history.length})
             </span>
@@ -418,18 +418,18 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
             <button
               type="button"
               onClick={onClearHistory}
-              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-red-500 hover:bg-[var(--status-warning-bg)]"
+              className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-red-500 hover:bg-[var(--status-warning-bg)]"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-4 w-4" />
               <span>{t('clearHistoryBtn')}</span>
             </button>
           )}
         </div>
 
         {history.length === 0 ? (
-          <p className="text-xs text-[var(--text-muted)]">{t('historyEmpty')}</p>
+          <p className="text-sm text-[var(--text-muted)]">{t('historyEmpty')}</p>
         ) : (
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
             {history.slice(0, 6).map((item) => (
               <button
                 key={item.id}
@@ -439,15 +439,15 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
                   setDestLang(item.dest);
                   void runTranslate(item.origin, 'auto', item.dest);
                 }}
-                className="flex flex-col justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-3 text-left text-xs transition hover:border-[var(--accent-primary)]"
+                className="flex flex-col justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-3.5 text-left text-sm transition hover:border-[var(--accent-primary)]"
               >
                 <div>
-                  <div className="mb-1 flex items-center justify-between font-mono text-[10px] text-[var(--accent-primary)]">
+                  <div className="mb-1 flex items-center justify-between font-mono text-xs text-[var(--accent-primary)]">
                     <span>
                       {item.srcName} → {item.destName}
                     </span>
                     <span className="flex items-center gap-1 text-[var(--text-muted)]">
-                      <Clock className="h-3 w-3" />
+                      <Clock className="h-3.5 w-3.5" />
                       {new Date(item.timestampIso).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',

@@ -13,7 +13,7 @@ export const StatusBanner: React.FC<StatusBannerProps> = ({ error, onDismiss }) 
     <div
       role="alert"
       aria-live="polite"
-      className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-400/40 bg-[var(--status-warning-bg)] px-4 py-3 text-xs font-medium text-[var(--status-warning-text)] sm:text-sm"
+      className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-400/40 bg-[var(--status-warning-bg)] px-4 py-3.5 text-sm font-medium text-[var(--status-warning-text)] sm:text-base"
     >
       <div className="flex items-center gap-2.5">
         <AlertTriangle className="h-4 w-4 shrink-0" />

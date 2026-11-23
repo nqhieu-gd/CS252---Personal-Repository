@@ -71,7 +71,7 @@ Verified directly on this machine before planning:
 - **Purpose:** Translate structured travel destination cards field-by-field while preserving non-string data.
 - **Required Features:**
   - Curated multi-destination dataset preloaded on backend:
-    - **Hanoi** *(using the exact 5 tutorial fields: `name`, `description`, `attractions`, `food_specialties`, `best_time_to_visit`, plus non-string metadata `avg_daily_budget_usd: 45`, `rating: 4.8`, `unesco_sites: 1` to prove non-string preservation)*.
+    - **Hanoi** *(using the exact 5 tutorial fields: `name`, `description`, `attractions`, `food_specialties`, `best_time_to_visit`, plus non-string metadata `estimated_daily_budget_usd: 45`, `recommended_stay_days: 3` to prove non-string preservation)*.
     - Additional rich Vietnam destinations: **Ho Chi Minh City**, **Da Nang & Hoi An**, **Hue**, **Da Lat**, **Phu Quoc**, **Vung Tau**, **Quy Nhon**.
   - Target language selector + **"Translate Destination Guide"** action calling `POST /api/travel/destination`.
   - Side-by-side or toggleable **Original vs. Translated** structured card view clearly tagging translated string fields vs. preserved non-string metadata fields.

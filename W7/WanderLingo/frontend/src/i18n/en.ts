@@ -1,6 +1,6 @@
 export const en = {
   appName: 'WanderLingo',
-  appSubtitle: 'Multilingual Travel Companion · Powered by py-googletrans',
+  appSubtitle: 'Multilingual Travel & Hospitality Companion',
   tabTranslator: 'Live Translator & Phrasebook',
   tabDestinations: 'Destination Guides',
   tabReviews: 'Hotel Reviews (Bulk)',
@@ -19,7 +19,7 @@ export const en = {
   sourceLanguage: 'Source Language',
   targetLanguage: 'Target Language',
   swapLanguages: 'Swap Languages',
-  pinnedTravelLanguages: 'Travel Languages (Tutorial Sec. 2)',
+  pinnedTravelLanguages: 'Popular Travel Languages',
   allSupportedLanguages: 'All Supported Languages',
   searchLanguagePlaceholder: 'Search 240+ languages or ISO codes...',
   inputPlaceholder: 'Enter travel phrase, hotel inquiry, or destination note to translate...',
@@ -44,9 +44,9 @@ export const en = {
   historyEmpty: 'Your recent translations will appear here.',
   clearHistoryBtn: 'Clear History',
   // Workspace 2: Destination Guide Translator
-  destHeaderTitle: 'Travel Destination Information Translator (Tutorial Example 3)',
+  destHeaderTitle: 'Vietnam Destination Guide Translator',
   destHeaderSubtitle:
-    'Translates structured string fields (name, description, attractions, food specialties, best time to visit) while preserving numeric & non-string metadata untouched.',
+    'Translates structured destination fields (name, description, attractions, food specialties, best time to visit, local tips) into any language while keeping numeric travel metadata intact.',
   selectDestinationLabel: 'Curated Destinations',
   customJsonModeBtn: 'Custom Destination Fields',
   curatedModeBtn: 'Curated City Guides',
@@ -59,11 +59,11 @@ export const en = {
     'Edit JSON below (include string fields and numeric metadata like rating or budget) and click Translate Destination Guide.',
   invalidJsonError: 'Invalid JSON format. Please provide a valid JSON object.',
   // Workspace 3: Hotel Review Translator
-  reviewsHeaderTitle: 'Hotel Review Bulk Translation System (Tutorial Example 1 & Sec. 4)',
+  reviewsHeaderTitle: 'Multilingual Guest Review Translator',
   reviewsHeaderSubtitle:
-    'Automatically detects each review language, skips reviews already written in your target language, and batch-translates the rest with confidence metrics.',
+    'Automatically detects each guest review language, skips reviews already written in your target language, and batch-translates the rest with confidence metrics.',
   translateAllReviewsBtn: 'Translate All Reviews',
-  resetSampleReviewsBtn: 'Reset Tutorial Samples',
+  resetSampleReviewsBtn: 'Restore Default Reviews',
   addCustomReviewTitle: 'Add Custom / Bulk Guest Reviews',
   addCustomReviewPlaceholder:
     'Paste one or more guest reviews (one review per line) in any language...',
@@ -76,9 +76,9 @@ export const en = {
   originalReviewLabel: 'Original Guest Review',
   translatedReviewLabel: 'Translated Review',
   // Workspace 4: Travel Inquiry Desk
-  inquiryHeaderTitle: 'Travel Inquiry Language Processor & Concierge Desk (Tutorial Example 2)',
+  inquiryHeaderTitle: 'Multilingual Concierge & Traveler Inquiry Desk',
   inquiryHeaderSubtitle:
-    'Detects traveler language & confidence, determines needs_translation, translates into staff language, and reverse-translates your concierge reply back to the guest.',
+    'Automatically detects each guest message language, translates foreign inquiries into your staff working language, and translates your reply back to the guest.',
   staffLanguageLabel: 'Staff Working Language',
   processAllInquiriesBtn: 'Process All Queued Inquiries',
   processSingleInquiryBtn: 'Process Inquiry',
@@ -86,12 +86,14 @@ export const en = {
   newInquiryNamePlaceholder: 'Guest Name (optional)',
   newInquiryTextPlaceholder: 'Type a guest question in Japanese, Spanish, Vietnamese, French...',
   addAndProcessInquiryBtn: 'Process New Inquiry',
+  originalInquiryLabel: 'Original Traveler Message',
+  unprocessedInquiryHint: 'Click Process Inquiry or Process All Queued Inquiries to detect language and translate.',
   conciergeReplyLabel: 'Two-Way Concierge Reply Composer',
   conciergeReplyPlaceholder: 'Write your reply in staff language to translate back into the guest language...',
   translateReplyBtn: 'Translate Reply to Guest Language',
   translatedReplyOutputLabel: 'Translated Reply for Guest',
   footerText:
-    'CS252 Lab 07 · WanderLingo Multilingual Travel Companion · Python FastAPI + py-googletrans (4.0.2) + React TypeScript',
+    'WanderLingo · Multilingual Vietnam Travel & Hospitality Companion · Powered by Google Translate',
 } as const;
 
 export type TranslationKey = keyof typeof en;

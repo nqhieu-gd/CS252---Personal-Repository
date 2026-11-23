@@ -80,10 +80,10 @@ powershell -ExecutionPolicy Bypass -File "F:\Git\nqhieu-gd-local\CS252---Persona
    - Translate `"Hello, how are you?"` into Vietnamese (`"Xin chào bạn khoẻ không?"`) and Japanese (`"どうもありがとうございます。"` with phonetic pronunciation `"Dōmo arigatōgozaimasu."`).
    - Click **"Detect Language Only"** on `"¿Dónde está el hotel?"` to show `Spanish (es)` with `100%` confidence.
    - Click a phrasebook chip and show local translation history updating below.
-3. **Tab 2 — Destination Guides / Tutorial Example 3 (1:15–2:00):**
+3. **Tab 2 — Destination Guides (1:15–2:00):**
    - Show the **8 curated Vietnam destinations** (*Hanoi, Ho Chi Minh City, Da Nang & Hoi An, Hue, Da Lat, Phu Quoc, Vung Tau, Quy Nhon*).
-   - Select **Hanoi (Tutorial Example 3)** or **Hue / Da Lat / Phu Quoc** and translate into **Vietnamese** or **Japanese**.
-   - Highlight how all 6 string fields are tagged **`Translated String`** while numeric fields (`Avg Daily Budget Usd: 45`, `Visitor Rating: 4.8`, `Unesco Heritage Sites: 1`) are tagged **`Preserved Non-String`**.
+   - Select **Hanoi (Vietnam Capital)** or **Hue / Da Lat / Phu Quoc** and translate into **Vietnamese** or **Japanese**.
+   - Highlight how all 6 string fields are tagged **`Translated String`** while numeric fields (`Estimated Daily Budget (USD): 45`, `Recommended Stay Days: 3`) are tagged **`Preserved Non-String`**.
    - Briefly toggle **Custom Destination Fields (JSON)** to show custom dictionary support.
 4. **Tab 3 — Hotel Reviews Bulk Translator / Tutorial Example 1 (2:00–2:45):**
    - Click **"Translate All Reviews (8)"** with Target Language = **English**.

@@ -66,27 +66,27 @@ export const TopBar: React.FC<TopBarProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Brand */}
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-primary)] text-white shadow-sm">
-              <Languages className="h-5 w-5" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--accent-primary)] text-white shadow-sm">
+              <Languages className="h-6 w-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold tracking-tight text-[var(--text-primary)]">
+                <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
                   {t('appName')}
                 </h1>
-                <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 font-mono text-[11px] font-semibold text-[var(--accent-primary)]">
+                <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-0.5 font-mono text-xs font-semibold text-[var(--accent-primary)]">
                   googletrans {health?.googletrans_version ?? '4.0.2'}
                 </span>
               </div>
-              <p className="text-xs text-[var(--text-secondary)]">{t('appSubtitle')}</p>
+              <p className="text-sm text-[var(--text-secondary)]">{t('appSubtitle')}</p>
             </div>
           </div>
 
           {/* Right Controls: Endpoint Preset, Health/Cache, EN/VI, Theme */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Tutorial Sec 5: Custom Service URLs Selector */}
-            <div className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-2.5 py-1.5 text-xs">
-              <Server className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
+            <div className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3 py-2 text-sm">
+              <Server className="h-4 w-4 text-[var(--accent-primary)]" />
               <span className="hidden font-medium text-[var(--text-secondary)] md:inline">
                 {t('servicePresetLabel')}:
               </span>
@@ -103,9 +103,9 @@ export const TopBar: React.FC<TopBarProps> = ({
             </div>
 
             {/* Health & Cache Pill */}
-            <div className="flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-2.5 py-1.5 text-xs">
+            <div className="flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3 py-2 text-sm">
               <span
-                className={`inline-block h-2 w-2 rounded-full ${
+                className={`inline-block h-2.5 w-2.5 rounded-full ${
                   health ? 'bg-emerald-500' : 'bg-amber-500'
                 }`}
               />
@@ -116,14 +116,14 @@ export const TopBar: React.FC<TopBarProps> = ({
                 <>
                   <span className="text-[var(--text-muted)]">·</span>
                   <span className="flex items-center gap-1 text-[var(--text-secondary)]">
-                    <Database className="h-3 w-3" />
+                    <Database className="h-3.5 w-3.5" />
                     {t('cacheHitsLabel')}: <strong>{health.cache_hits}</strong>
                   </span>
                   {health.cache_size > 0 && (
                     <button
                       type="button"
                       onClick={onClearCache}
-                      className="ml-1 rounded bg-[var(--bg-surface)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent-primary)] hover:underline"
+                      className="ml-1 rounded bg-[var(--bg-surface)] px-2 py-0.5 text-xs font-medium text-[var(--accent-primary)] hover:underline"
                     >
                       {t('clearCacheBtn')}
                     </button>
@@ -136,12 +136,12 @@ export const TopBar: React.FC<TopBarProps> = ({
             <div
               role="group"
               aria-label="Interface Language"
-              className="flex rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-0.5 text-xs font-semibold"
+              className="flex rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-0.5 text-sm font-semibold"
             >
               <button
                 type="button"
                 onClick={() => setLocale('en')}
-                className={`rounded-lg px-2.5 py-1 transition ${
+                className={`rounded-lg px-3 py-1.5 transition ${
                   locale === 'en'
                     ? 'bg-[var(--accent-primary)] text-white'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -152,7 +152,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               <button
                 type="button"
                 onClick={() => setLocale('vi')}
-                className={`rounded-lg px-2.5 py-1 transition ${
+                className={`rounded-lg px-3 py-1.5 transition ${
                   locale === 'vi'
                     ? 'bg-[var(--accent-primary)] text-white'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -167,16 +167,16 @@ export const TopBar: React.FC<TopBarProps> = ({
               type="button"
               onClick={toggleTheme}
               aria-label="Toggle Light/Dark Theme"
-              className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-2.5 py-1.5 text-xs font-medium text-[var(--text-primary)] transition hover:border-[var(--accent-primary)]"
+              className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] transition hover:border-[var(--accent-primary)]"
             >
               {theme === 'dark' ? (
                 <>
-                  <Sun className="h-3.5 w-3.5 text-amber-400" />
+                  <Sun className="h-4 w-4 text-amber-400" />
                   <span className="hidden sm:inline">{t('themeLight')}</span>
                 </>
               ) : (
                 <>
-                  <Moon className="h-3.5 w-3.5 text-sky-600" />
+                  <Moon className="h-4 w-4 text-sky-600" />
                   <span className="hidden sm:inline">{t('themeDark')}</span>
                 </>
               )}
@@ -187,7 +187,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         {/* 4 Workspace Navigation Tabs */}
         <nav
           aria-label="Workspaces"
-          className="mt-3 flex gap-1.5 overflow-x-auto pb-1"
+          className="mt-3 flex gap-2 overflow-x-auto pb-1"
         >
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -196,7 +196,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 key={tab.id}
                 type="button"
                 onClick={() => onSelectTab(tab.id)}
-                className={`flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition sm:text-sm ${
+                className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition sm:text-base ${
                   isActive
                     ? 'bg-[var(--accent-primary)] text-white shadow-xs'
                     : 'bg-[var(--bg-surface-muted)] text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]'

@@ -2,7 +2,7 @@ import type { TranslationDictionary } from './en';
 
 export const vi: TranslationDictionary = {
   appName: 'WanderLingo',
-  appSubtitle: 'Trợ lý Du lịch Đa ngôn ngữ · Tích hợp py-googletrans',
+  appSubtitle: 'Trợ lý Du lịch & Khách sạn Đa ngôn ngữ',
   tabTranslator: 'Dịch Trực tiếp & Sổ tay Câu thoại',
   tabDestinations: 'Cẩm nang Điểm đến',
   tabReviews: 'Đánh giá Khách sạn (Hàng loạt)',
@@ -21,7 +21,7 @@ export const vi: TranslationDictionary = {
   sourceLanguage: 'Ngôn ngữ nguồn',
   targetLanguage: 'Ngôn ngữ đích',
   swapLanguages: 'Đổi chiều ngôn ngữ',
-  pinnedTravelLanguages: 'Ngôn ngữ Du lịch (Mục 2 Tutorial)',
+  pinnedTravelLanguages: 'Ngôn ngữ Du lịch Phổ biến',
   allSupportedLanguages: 'Tất cả Ngôn ngữ Hỗ trợ',
   searchLanguagePlaceholder: 'Tìm kiếm hơn 240 ngôn ngữ hoặc mã ISO...',
   inputPlaceholder: 'Nhập câu giao tiếp du lịch, yêu cầu đặt phòng hoặc ghi chú điểm đến...',
@@ -46,9 +46,9 @@ export const vi: TranslationDictionary = {
   historyEmpty: 'Các bản dịch gần đây của bạn sẽ hiển thị tại đây.',
   clearHistoryBtn: 'Xóa lịch sử',
   // Workspace 2: Destination Guide Translator
-  destHeaderTitle: 'Hệ thống Dịch Thông tin Điểm đến Du lịch (Ví dụ 3 Tutorial)',
+  destHeaderTitle: 'Trình Dịch Cẩm nang Điểm đến Việt Nam',
   destHeaderSubtitle:
-    'Dịch các trường văn bản có cấu trúc (tên, mô tả, điểm tham quan, ẩm thực, thời điểm lý tưởng) đồng thời giữ nguyên dữ liệu số và metadata.',
+    'Dịch các thông tin điểm đến (tên, mô tả, điểm tham quan, đặc sản ẩm thực, thời điểm lý tưởng, mẹo địa phương) sang mọi ngôn ngữ đồng thời giữ nguyên các chỉ số du lịch.',
   selectDestinationLabel: 'Điểm đến Tuyển chọn',
   customJsonModeBtn: 'Tùy chỉnh Dữ liệu JSON',
   curatedModeBtn: 'Cẩm nang Thành phố Mẫu',
@@ -61,11 +61,11 @@ export const vi: TranslationDictionary = {
     'Chỉnh sửa đối tượng JSON bên dưới (gồm cả chuỗi văn bản và số liệu như rating, ngân sách) rồi nhấn Dịch Cẩm nang Điểm đến.',
   invalidJsonError: 'Định dạng JSON không hợp lệ. Vui lòng nhập một đối tượng JSON hợp lệ.',
   // Workspace 3: Hotel Review Translator
-  reviewsHeaderTitle: 'Hệ thống Dịch Hàng loạt Đánh giá Khách sạn (Ví dụ 1 & Mục 4 Tutorial)',
+  reviewsHeaderTitle: 'Hệ thống Dịch Hàng loạt Đánh giá Khách sạn',
   reviewsHeaderSubtitle:
-    'Tự động nhận diện ngôn ngữ từng đánh giá, bỏ qua các đánh giá đã ở ngôn ngữ đích và dịch hàng loạt các đánh giá còn lại kèm điểm tin cậy.',
+    'Tự động nhận diện ngôn ngữ từng đánh giá của du khách, bỏ qua các đánh giá đã ở ngôn ngữ đích và dịch hàng loạt các đánh giá còn lại kèm độ tin cậy.',
   translateAllReviewsBtn: 'Dịch Tất cả Đánh giá',
-  resetSampleReviewsBtn: 'Khôi phục Mẫu Tutorial',
+  resetSampleReviewsBtn: 'Khôi phục Đánh giá Mặc định',
   addCustomReviewTitle: 'Thêm Đánh giá Khách hàng (Đơn lẻ hoặc Hàng loạt)',
   addCustomReviewPlaceholder:
     'Dán một hoặc nhiều đánh giá khách sạn (mỗi dòng 1 đánh giá) bằng bất kỳ ngôn ngữ nào...',
@@ -78,9 +78,9 @@ export const vi: TranslationDictionary = {
   originalReviewLabel: 'Đánh giá Gốc của Khách',
   translatedReviewLabel: 'Bản dịch Đánh giá',
   // Workspace 4: Travel Inquiry Desk
-  inquiryHeaderTitle: 'Bộ xử lý Yêu cầu Du khách & Bàn Lễ tân Đa ngôn ngữ (Ví dụ 2 Tutorial)',
+  inquiryHeaderTitle: 'Bàn Lễ tân & Hỗ trợ Du khách Đa ngôn ngữ',
   inquiryHeaderSubtitle:
-    'Nhận diện ngôn ngữ & độ tin cậy, kiểm tra cờ needs_translation, dịch sang ngôn ngữ nhân viên và dịch ngược câu trả lời lễ tân sang ngôn ngữ của khách.',
+    'Tự động nhận diện ngôn ngữ tin nhắn của khách, dịch sang ngôn ngữ làm việc của lễ tân và dịch ngược câu trả lời gửi lại cho du khách.',
   staffLanguageLabel: 'Ngôn ngữ Làm việc của Nhân viên',
   processAllInquiriesBtn: 'Xử lý Tất cả Yêu cầu',
   processSingleInquiryBtn: 'Xử lý Yêu cầu',
@@ -88,10 +88,12 @@ export const vi: TranslationDictionary = {
   newInquiryNamePlaceholder: 'Tên du khách (tùy chọn)',
   newInquiryTextPlaceholder: 'Nhập câu hỏi của du khách bằng tiếng Nhật, Tây Ban Nha, Việt, Pháp...',
   addAndProcessInquiryBtn: 'Xử lý Yêu cầu Mới',
+  originalInquiryLabel: 'Tin nhắn Gốc của Du khách',
+  unprocessedInquiryHint: 'Nhấn Xử lý Yêu cầu hoặc Xử lý Tất cả Yêu cầu để nhận diện ngôn ngữ và dịch.',
   conciergeReplyLabel: 'Soạn Phản hồi Lễ tân Hai chiều',
   conciergeReplyPlaceholder: 'Nhập câu trả lời bằng ngôn ngữ nhân viên để dịch ngược sang ngôn ngữ của du khách...',
   translateReplyBtn: 'Dịch Phản hồi sang Ngôn ngữ Khách',
   translatedReplyOutputLabel: 'Bản dịch Phản hồi gửi Du khách',
   footerText:
-    'CS252 Lab 07 · WanderLingo Trợ lý Du lịch Đa ngôn ngữ · Python FastAPI + py-googletrans (4.0.2) + React TypeScript',
+    'WanderLingo · Trợ lý Du lịch & Khách sạn Đa ngôn ngữ · Tích hợp Google Translate',
 };

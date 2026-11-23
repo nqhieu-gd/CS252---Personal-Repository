@@ -180,15 +180,15 @@ async def test_destination_guide_preserves_non_string_fields(
     payload = {
         "name": "Hanoi",
         "description": "The capital city of Vietnam",
-        "avg_daily_budget_usd": 45,
-        "visitor_rating": 4.8,
+        "estimated_daily_budget_usd": 45,
+        "recommended_stay_days": 3,
         "empty_note": "   ",
     }
     res = await engine.translate_destination_info(payload, target_language="vi")
     assert "name" in res.translated_fields
     assert "description" in res.translated_fields
-    assert "avg_daily_budget_usd" in res.preserved_fields
-    assert "visitor_rating" in res.preserved_fields
+    assert "estimated_daily_budget_usd" in res.preserved_fields
+    assert "recommended_stay_days" in res.preserved_fields
     assert "empty_note" in res.preserved_fields
-    assert res.translated_data["avg_daily_budget_usd"] == 45
-    assert res.translated_data["visitor_rating"] == 4.8
+    assert res.translated_data["estimated_daily_budget_usd"] == 45
+    assert res.translated_data["recommended_stay_days"] == 3

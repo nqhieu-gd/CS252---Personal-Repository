@@ -20,7 +20,8 @@
 | **Doc Conversion** | `268c8f4` | 2026-11-23 16:25:49 | `Reformat API Translate into .md` | Replaced `W7/2025 CT - API Translate.docx.pdf` with `W7/2025 CT - API Translate.md` |
 | **Dataset Refinement** | `ad7194a` | 2026-11-23 17:04:22 | `feat(w7): replace foreign destination guides with Hue, Da Lat, Phu Quoc, Vung Tau, and Quy Nhon` | `3 files`: Updated `travel_samples.py`, `Development_Plan.md`, and `report.md` to 8 Vietnam destinations |
 | **Chaos-Test Hardening** | `2b07b56` | 2026-11-23 17:11:40 | `fix(w7): harden multi-sentence pronunciation, polymorphic detected lang, and custom JSON UI edge cases` | `6 files`: `adapter.py`, `test_translator_service.py`, `DestinationGuidePanel.tsx`, `LiveTranslatorPanel.tsx`, `HotelReviewsPanel.tsx`, `InquiryDeskPanel.tsx` |
-| **Auto-Open Browser UX** | `feat(w7)` | 2026-11-23 17:24:00 | `feat(w7): auto-open default web browser on server ready in start.ps1 and vite dev` | `4 files`: `start.ps1` (`/api/health` readiness poller + `Start-Process`), `vite.config.ts` (`server.open: true`), `SetupGuide.md`, `Git_Commit_History.md` |
+| **Auto-Open Browser UX** | `19af4bc` | 2026-11-23 17:24:21 | `feat(w7): auto-open default web browser on server ready and add complete function catalog to report.md` | `5 files`: `start.ps1` (`/api/health` readiness poller + `Start-Process`), `vite.config.ts` (`server.open: true`), `report.md`, `SetupGuide.md`, `Git_Commit_History.md` |
+| **Customer-Facing UI Polish** | `style(w7)` | 2026-11-23 17:48:45 | `style(w7): replace all tutorial/assignment labels in UI and sample datasets with customer-facing travel terminology` | `6 files`: `travel_samples.py`, `en.ts`, `vi.ts`, `InquiryDeskPanel.tsx`, `SetupGuide.md`, `Git_Commit_History.md` |
 
 ---
 

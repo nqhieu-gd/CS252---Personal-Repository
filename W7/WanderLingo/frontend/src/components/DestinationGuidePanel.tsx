@@ -26,8 +26,8 @@ const DEFAULT_CUSTOM_JSON = JSON.stringify(
     attractions: 'Japanese Covered Bridge, Thu Bon River Night Market, An Bang Beach',
     food_specialties: 'Cao Lau Noodles, White Rose Dumplings, Banh Mi Phuong',
     best_time_to_visit: 'February to April for cool breezes and lantern festivals',
-    avg_daily_budget_usd: 40,
-    visitor_rating: 4.9,
+    estimated_daily_budget_usd: 40,
+    recommended_stay_days: 3,
   },
   null,
   2,
@@ -121,7 +121,11 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
   };
 
   const formatFieldLabel = (key: string) =>
-    key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    key
+      .replace(/_usd$/i, ' (USD)')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+      .replace(/\(Usd\)/g, '(USD)');
 
   return (
     <div className="space-y-6">
@@ -129,11 +133,11 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
       <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-xs">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="flex items-center gap-2 text-base font-bold text-[var(--text-primary)] sm:text-lg">
+            <h2 className="flex items-center gap-2 text-lg font-bold text-[var(--text-primary)] sm:text-xl">
               <Compass className="h-5 w-5 text-[var(--accent-primary)]" />
               <span>{t('destHeaderTitle')}</span>
             </h2>
-            <p className="mt-1 max-w-3xl text-xs text-[var(--text-secondary)] sm:text-sm">
+            <p className="mt-1 max-w-3xl text-sm text-[var(--text-secondary)] sm:text-base">
               {t('destHeaderSubtitle')}
             </p>
           </div>
@@ -144,7 +148,7 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
               setIsCustomMode((prev) => !prev);
               setTranslationResult(null);
             }}
-            className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3.5 py-2 text-xs font-semibold text-[var(--text-primary)] transition hover:border-[var(--accent-primary)]"
+            className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:border-[var(--accent-primary)]"
           >
             <Code2 className="h-4 w-4 text-[var(--accent-primary)]" />
             <span>{isCustomMode ? t('curatedModeBtn') : t('customJsonModeBtn')}</span>
@@ -154,7 +158,7 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
         {/* Curated Destination Pills OR Custom JSON Editor */}
         {!isCustomMode ? (
           <div className="mt-4">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+            <div className="mb-2 text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">
               {t('selectDestinationLabel')}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -168,14 +172,14 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
                       setSelectedId(dest.id);
                       setTranslationResult(null);
                     }}
-                    className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-semibold transition sm:text-sm ${
+                    className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition sm:text-base ${
                       active
                         ? 'border-[var(--accent-primary)] bg-[var(--accent-soft)] text-[var(--accent-primary)]'
                         : 'border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
                     <span>{String(dest.data.name)}</span>
-                    <span className="rounded-md bg-[var(--bg-surface)] px-1.5 py-0.5 text-[10px] font-medium opacity-80">
+                    <span className="rounded-md bg-[var(--bg-surface)] px-2 py-0.5 text-xs font-medium opacity-85">
                       {dest.badge}
                     </span>
                   </button>
@@ -185,19 +189,19 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
           </div>
         ) : (
           <div className="mt-4">
-            <p className="mb-2 text-xs text-[var(--text-secondary)]">{t('customJsonHelp')}</p>
+            <p className="mb-2 text-sm text-[var(--text-secondary)]">{t('customJsonHelp')}</p>
             <textarea
               rows={8}
               value={customJsonText}
               onChange={(e) => setCustomJsonText(e.target.value)}
-              className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-3 font-mono text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
+              className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-3.5 font-mono text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
             />
           </div>
         )}
 
         {/* Target Language & Translate Action */}
         <div className="mt-4 flex flex-wrap items-end justify-between gap-3 border-t border-[var(--border-subtle)] pt-4">
-          <div className="w-full sm:w-72">
+          <div className="w-full sm:w-80">
             <LanguageCombobox
               label={t('targetLanguage')}
               value={targetLang}
@@ -211,7 +215,7 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
             type="button"
             disabled={isTranslating}
             onClick={() => void handleTranslateGuide()}
-            className="flex items-center gap-2 rounded-xl bg-[var(--accent-primary)] px-5 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 sm:text-sm"
+            className="flex items-center gap-2 rounded-xl bg-[var(--accent-primary)] px-5 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 sm:text-base"
           >
             <Sparkles className="h-4 w-4" />
             <span>{isTranslating ? t('translatingBtn') : t('translateGuideBtn')}</span>
@@ -223,7 +227,7 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Original Destination Record */}
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-xs">
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">
+          <h3 className="mb-3 text-base font-bold uppercase tracking-wider text-[var(--text-muted)]">
             {t('originalFieldsTitle')}
           </h3>
           <div className="space-y-3">
@@ -232,17 +236,17 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
               return (
                 <div
                   key={key}
-                  className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-3"
+                  className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-3.5"
                 >
-                  <div className="mb-1 flex items-center justify-between text-xs">
+                  <div className="mb-1 flex items-center justify-between text-sm">
                     <span className="font-bold text-[var(--text-primary)]">
                       {formatFieldLabel(key)}
                     </span>
-                    <span className="font-mono text-[10px] text-[var(--text-muted)]">
+                    <span className="font-mono text-xs text-[var(--text-muted)]">
                       {isString ? 'str' : typeof val}
                     </span>
                   </div>
-                  <div className="text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm">
+                  <div className="text-base leading-relaxed text-[var(--text-secondary)]">
                     {formatFieldValue(val)}
                   </div>
                 </div>
@@ -254,11 +258,11 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
         {/* Translated Destination Record */}
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-xs">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            <h3 className="text-base font-bold uppercase tracking-wider text-[var(--text-muted)]">
               {t('translatedFieldsTitle')}
             </h3>
             {translationResult && (
-              <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--accent-primary)]">
+              <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-sm font-semibold text-[var(--accent-primary)]">
                 {translationResult.target_language_name} ({translationResult.target_language}) ·{' '}
                 {translationResult.latency_ms} ms
               </span>
@@ -266,7 +270,7 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
           </div>
 
           {!translationResult ? (
-            <div className="flex min-h-[260px] items-center justify-center rounded-xl border border-dashed border-[var(--border-subtle)] p-6 text-center text-xs text-[var(--text-muted)] sm:text-sm">
+            <div className="flex min-h-[260px] items-center justify-center rounded-xl border border-dashed border-[var(--border-subtle)] p-6 text-center text-base text-[var(--text-muted)]">
               {isTranslating ? t('translatingBtn') : t('translateGuideBtn')}
             </div>
           ) : (
@@ -276,24 +280,24 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
                 return (
                   <div
                     key={key}
-                    className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-3"
+                    className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-3.5"
                   >
-                    <div className="mb-1 flex items-center justify-between gap-2 text-xs">
+                    <div className="mb-1 flex items-center justify-between gap-2 text-sm">
                       <span className="font-bold text-[var(--text-primary)]">
                         {formatFieldLabel(key)}
                       </span>
                       <span
-                        className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                           isTranslated
                             ? 'bg-[var(--status-good-bg)] text-[var(--status-good-text)]'
                             : 'bg-[var(--status-caution-bg)] text-[var(--status-caution-text)]'
                         }`}
                       >
-                        <Tag className="h-2.5 w-2.5" />
+                        <Tag className="h-3 w-3" />
                         {isTranslated ? t('translatedStringTag') : t('preservedValueTag')}
                       </span>
                     </div>
-                    <div className="text-xs font-medium leading-relaxed text-[var(--text-primary)] sm:text-sm">
+                    <div className="text-base font-medium leading-relaxed text-[var(--text-primary)]">
                       {formatFieldValue(val)}
                     </div>
                   </div>
