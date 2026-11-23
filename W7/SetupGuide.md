@@ -26,11 +26,10 @@ From PowerShell, run:
 ```powershell
 powershell -ExecutionPolicy Bypass -File "F:\Git\nqhieu-gd-local\CS252---Personal-Repository\W7\WanderLingo\start.ps1"
 ```
-*(Pass `-Rebuild` if you edit any frontend files and want `start.ps1` to re-run `npm.cmd run build` before starting FastAPI.)*
-
-Then open:
-- **WanderLingo Web Application:** `http://127.0.0.1:8000`
-- **FastAPI Interactive Swagger Docs:** `http://127.0.0.1:8000/docs`
+- **Automatic Browser Launch:** As soon as the FastAPI server passes its `/api/health` check, `start.ps1` **automatically opens `http://127.0.0.1:8000` in your default web browser** (pass `-NoBrowser` if you want to suppress auto-opening, or `-Rebuild` if you want to force a fresh frontend build).
+- **Manual URLs (if needed):**
+  - **WanderLingo Web Application:** `http://127.0.0.1:8000`
+  - **FastAPI Interactive Swagger Docs:** `http://127.0.0.1:8000/docs`
 
 ### Option B: Two-Terminal Development Mode (Hot Reload)
 1. **Terminal 1 (FastAPI Backend on port 8000):**
@@ -44,7 +43,7 @@ Then open:
    cd "F:\Git\nqhieu-gd-local\CS252---Personal-Repository\W7\WanderLingo\frontend"
    npm.cmd run dev
    ```
-   Open `http://localhost:5173`.
+   *(Vite is configured with `server.open: true` in `vite.config.ts`, so `http://localhost:5173` also opens automatically in your default browser.)*
 
 ---
 

@@ -54,8 +54,8 @@ Because `py-googletrans` is a **Python library** (not a client-side JavaScript S
 ```
 
 ### Dual Execution Modes
-- **Single-Command Demo / Production Mode (`W7/WanderLingo/start.ps1`):** Compiles the React frontend into `frontend/dist/` and mounts it directly inside FastAPI (`app/main.py`), serving both the web UI and all `/api/*` endpoints from a single server at `http://127.0.0.1:8000` (with interactive OpenAPI documentation at `http://127.0.0.1:8000/docs`).
-- **Two-Terminal Hot-Reload Development Mode:** FastAPI runs on `http://127.0.0.1:8000` while Vite runs on `http://localhost:5173` and proxies `/api/*` requests to port `8000` via `vite.config.ts`.
+- **Single-Command Demo / Production Mode (`W7/WanderLingo/start.ps1`):** Compiles the React frontend into `frontend/dist/` (when missing or when `-Rebuild` is passed), mounts it directly inside FastAPI (`app/main.py`), serves both the web UI and all `/api/*` endpoints from a single server at `http://127.0.0.1:8000` (with interactive OpenAPI documentation at `http://127.0.0.1:8000/docs`), and polls `/api/health` in a background job to **automatically open `http://127.0.0.1:8000` in the user's default web browser** once ready (suppressible via `-NoBrowser`).
+- **Two-Terminal Hot-Reload Development Mode:** FastAPI runs on `http://127.0.0.1:8000` while Vite runs on `http://localhost:5173` (`server.open: true` auto-opens the browser) and proxies `/api/*` requests to port `8000` via `vite.config.ts`.
 
 ---
 
@@ -117,7 +117,62 @@ During **Phase 0** live verification (`backend/scripts/smoke_googletrans.py`), f
 
 ---
 
-## 6. Verification & Automated Test Results
+## 6. Complete Function & Module Catalog
+
+### 6.1 Backend Python Functions & Classes (`W7/WanderLingo/backend/`)
+
+| Module | Function / Method | Responsibility |
+| :--- | :--- | :--- |
+| `app/services/adapter.py` | `normalize_confidence(raw_conf)` | Safely normalizes `Detected.confidence` across `float`, `int`, `list`, or `None` into `[0.0, 1.0]` rounded to 4 decimals |
+| `app/services/adapter.py` | `normalize_detected_lang(raw_lang)` | Unwraps polymorphic `Detected.lang` when `googletrans` returns a `list[str]` (mixed-language text) or empty `""` (emoji/numbers) |
+| `app/services/adapter.py` | `normalize_pronunciation(raw_pron, translated_text, origin_text)` | Filters out empty strings and echoed `origin`/`translated` fallbacks so only genuine phonetic romanization is returned |
+| `app/services/adapter.py` | `extract_pronunciation(result, translated_text, origin_text)` | Extracts single-sentence `.pronunciation` or recovers multi-sentence romanization from `result.extra_data["translation"][-1][2]` when `.pronunciation` is `[[]]` |
+| `app/services/adapter.py` | `_configure_translator(translator, service_urls)` | Sets `raise_exception=True`, `client_type="dict-chrome-ex"`, and preserves `service_urls` to prevent silent `DUMMY_DATA` and TKK `403` errors |
+| `app/services/adapter.py` | `GoogleTrans4Adapter.translate_text(text, src, dest, service_urls)` | Executes async `translator.translate()` via `googletrans==4.0.2` and returns normalized `RawTranslatedResult` |
+| `app/services/adapter.py` | `GoogleTrans4Adapter.detect_text(text, service_urls)` | Executes async `translator.detect()` via `googletrans==4.0.2` and returns normalized `RawDetectedResult` |
+| `app/services/adapter.py` | `get_googletrans_version()` / `get_raw_languages()` | Reads installed `googletrans` package version (`4.0.2`) and `googletrans.LANGUAGES` dictionary (245 languages) |
+| `app/services/translator_service.py` | `TranslationEngine.normalize_language_code(code, allow_auto)` | Normalizes case/underscores, resolves aliases (`zh` -> `zh-cn`, `zh_TW` -> `zh-tw`) and full language names, or raises `InvalidLanguageCodeError` (`HTTP 422`) |
+| `app/services/translator_service.py` | `TranslationEngine.get_language_name(code)` | Resolves an ISO code to its human-readable title-cased language name from `googletrans.LANGUAGES` |
+| `app/services/translator_service.py` | `TranslationEngine.get_service_presets_info()` | Returns metadata and domain lists for the 3 tutorial `service_urls` presets (`default`, `direct`, `redundant`) |
+| `app/services/translator_service.py` | `TranslationEngine.get_languages_catalog()` | Builds the `LanguagesResponse` payload containing the 8 pinned travel languages, all 245 languages, and alias mappings |
+| `app/services/translator_service.py` | `TranslationEngine._resolve_candidate_url_lists(service_preset)` | Generates ordered primary and fallback `service_urls` lists for automatic retry failover |
+| `app/services/translator_service.py` | `TranslationEngine._execute_with_retry(service_preset, operation_fn)` | Retries failed upstream calls with backoff delays (`0.35s`, `0.9s`) across candidate `service_urls`, raising `UpstreamTranslationError` (`HTTP 502`) on exhaustion |
+| `app/services/translator_service.py` | `TranslationEngine.detect(text, service_preset)` | Checks TTL LRU cache or runs live language detection with latency tracking (`DetectResponse`) |
+| `app/services/translator_service.py` | `TranslationEngine.translate(text, src, dest, service_preset)` | Short-circuits identical `src == dest`, checks TTL LRU cache, or runs live translation (`TranslateResponse`) |
+| `app/services/translator_service.py` | `TranslationEngine.translate_bulk(texts, src, dest, skip_same_language, service_preset)` | Batch-translates lists using `asyncio.Semaphore(3)`, optional same-language auto-skip, per-item error isolation, and `_build_bulk_summary()` |
+| `app/services/translator_service.py` | `TranslationEngine.translate_hotel_reviews(reviews, target_language, service_preset)` | **Tutorial Example 1:** Detects each review's language, skips reviews already in `target_language`, translates the rest, and computes language distribution |
+| `app/services/translator_service.py` | `TranslationEngine.process_travel_inquiry(inquiry_text, target_language, service_preset)` | **Tutorial Example 2:** Detects inquiry language, determines `needs_translation: bool`, and translates when needed |
+| `app/services/translator_service.py` | `TranslationEngine.translate_inquiry_reply(reply_text, staff_language, guest_language, service_preset)` | **Two-Way Extension:** Reverse-translates staff concierge replies back into the traveler's detected language with pronunciation |
+| `app/services/translator_service.py` | `TranslationEngine.translate_destination_info(destination_data, target_language, service_preset)` | **Tutorial Example 3:** Translates non-empty string values (`isinstance(value, str) and value.strip()`) while preserving numeric/non-string metadata untouched |
+| `app/services/cache.py` | `TTLLRUCache.get(key)` / `set(key, value)` / `clear()` / `stats()` | Thread-safe bounded LRU cache (`max_entries=500`, `ttl_seconds=1800`) tracking hits, misses, and active size |
+| `app/services/rate_limiter.py` | `SlidingWindowRateLimiter.check(client_key)` / `reset()` | Per-IP sliding-window rate limiter (`60 req / 60s`) computing remaining quota and `retry_after_seconds` |
+| `app/dependencies.py` | `enforce_rate_limit(request, response)` | FastAPI dependency attaching `X-RateLimit-Remaining` and raising `HTTP 429` with `Retry-After` header when exceeded |
+| `app/main.py` | `create_app()` | Configures FastAPI app, CORS, `422`/`502` exception handlers, API routers, and static `frontend/dist` SPA mounting |
+| `scripts/smoke_googletrans.py` | `configure_translator()` / `run_smoke_tests()` | Phase 0 live verification script testing `LANGUAGES`, single/bulk translation, Chinese variants, pronunciation, detection, and all 3 `service_urls` presets |
+
+### 6.2 Frontend TypeScript Functions, Hooks & Components (`W7/WanderLingo/frontend/src/`)
+
+| File | Function / Component | Responsibility |
+| :--- | :--- | :--- |
+| `services/apiClient.ts` | `requestJson<T>(url, options, signal)` & `apiClient.*` | Typed `fetch` wrapper with `AbortSignal` support and structured FastAPI error parsing (`ApiClientError`) across all 11 backend endpoints |
+| `i18n/I18nContext.tsx` | `I18nProvider` & `useI18n()` (`t`, `locale`, `setLocale`) | Bilingual `EN`/`VI` localization context persisted in `localStorage` (`wanderlingo_locale`) with compile-time key parity (`en.ts`, `vi.ts`) |
+| `context/ThemeContext.tsx` | `ThemeProvider` & `useTheme()` (`theme`, `toggleTheme`) | Light/Dark theme manager synced with `document.documentElement.dataset.theme` and `localStorage` (`wanderlingo_theme`) |
+| `hooks/useTranslationHistory.ts` | `useTranslationHistory()` (`history`, `addHistoryEntry`, `clearHistory`) | Manages recent translations in `localStorage` (`wanderlingo_history_v1`, deduplicated and capped at 25 items) |
+| `components/TopBar.tsx` | `TopBar` | Renders brand header, live `googletrans` version & cache counter, `service_urls` preset selector, `EN`/`VI` toggle, Light/Dark toggle, and 4 workspace tabs |
+| `components/LanguageCombobox.tsx` | `LanguageCombobox` (`selectCode`, `filteredTravel`, `filteredAll`) | Searchable dropdown pinning the 8 tutorial travel languages above all 245 `googletrans.LANGUAGES` (plus optional `Auto-Detect`) |
+| `components/LiveTranslatorPanel.tsx` | `LiveTranslatorPanel` (`runTranslate`, `runDetectOnly`, `handleSwapLanguages`, `handleCopy`, `handleSpeak`) | **Workspace 1:** Live two-pane translator, standalone language detector, language swap, Web Speech synthesis, phrasebook chips, and session history |
+| `components/DestinationGuidePanel.tsx` | `DestinationGuidePanel` (`handleTranslateGuide`, `formatFieldValue`, `formatFieldLabel`) | **Workspace 2:** Curated 8 Vietnam destination guides + Custom JSON editor with `Translated String` vs. `Preserved Non-String` field badges |
+| `components/HotelReviewsPanel.tsx` | `HotelReviewsPanel` (`handleTranslateAll`, `handleAppendCustomReviews`, `handleResetSamples`) | **Workspace 3:** Bulk hotel review translator with same-language skip badges, confidence scores, custom multi-line review input, and language breakdown KPI bar |
+| `components/InquiryDeskPanel.tsx` | `InquiryDeskPanel` (`processOneInquiry`, `processAllInquiries`, `handleAddAndProcessCustomInquiry`, `handleTranslateReply`, `handleCopyReply`) | **Workspace 4:** Traveler inquiry intake with `needs_translation` detection, custom inquiry submission, and two-way concierge reply reverse translation |
+| `components/StatusBanner.tsx` & `Footer.tsx` | `StatusBanner` & `Footer` | Accessible `role="alert"` error notification banner and attribution footer |
+| `App.tsx` | `App` (`refreshHealth`, `handleClearCache`) | Root coordinator loading `/api/health`, `/api/languages`, and `/api/travel/samples` on startup with `AbortController` cleanup |
+
+### 6.3 PowerShell Launcher (`W7/WanderLingo/start.ps1`)
+- Automated environment bootstrap (creates `backend/.venv` and installs `requirements.txt` if missing), builds `frontend/dist` (when missing or `-Rebuild` is passed), launches a background `/api/health` readiness poller that opens `http://127.0.0.1:8000` in the default web browser (`Start-Process`), and runs `uvicorn app.main:app`.
+
+---
+
+## 7. Verification & Automated Test Results
 
 - **Phase 0 Live Smoke Verification (`backend/scripts/smoke_googletrans.py`):** Verified live against Google Translate endpoints across `default`, `direct`, and `redundant` `service_urls` presets for single translation (`EN -> VI`), non-Latin pronunciation (`EN -> JA`, `EN -> ZH-CN`, `EN -> ZH-TW`), language detection (`ES`), and bulk translation.
 - **Backend Automated Test Suite (`pytest -v`):** **16 / 16 passed** (`tests/test_translator_service.py`, `tests/test_rate_limiter.py`, `tests/test_api_routes.py`), covering language alias normalization, polymorphic `detection.lang` and confidence normalization, single and multi-sentence pronunciation extraction, TTL LRU caching, retry/failover on transient errors, skip-if-same-language in hotel reviews, `needs_translation` in travel inquiries, non-string preservation in destination guides, HTTP `422` validation, and HTTP `429` rate limiting with `Retry-After`.
