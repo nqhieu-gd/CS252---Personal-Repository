@@ -50,7 +50,7 @@ Then open:
 
 ## 3. Running Automated Tests
 
-- **Backend Unit & API Contract Tests (`15 passed`):**
+- **Backend Unit & API Contract Tests (`16 passed`):**
   ```powershell
   cd "F:\Git\nqhieu-gd-local\CS252---Personal-Repository\W7\WanderLingo\backend"
   $env:PYTHONPATH="."
@@ -82,7 +82,8 @@ Then open:
    - Click **"Detect Language Only"** on `"¿Dónde está el hotel?"` to show `Spanish (es)` with `100%` confidence.
    - Click a phrasebook chip and show local translation history updating below.
 3. **Tab 2 — Destination Guides / Tutorial Example 3 (1:15–2:00):**
-   - Select **Hanoi (Tutorial Example 3)** and translate into **Vietnamese** or **Japanese**.
+   - Show the **8 curated Vietnam destinations** (*Hanoi, Ho Chi Minh City, Da Nang & Hoi An, Hue, Da Lat, Phu Quoc, Vung Tau, Quy Nhon*).
+   - Select **Hanoi (Tutorial Example 3)** or **Hue / Da Lat / Phu Quoc** and translate into **Vietnamese** or **Japanese**.
    - Highlight how all 6 string fields are tagged **`Translated String`** while numeric fields (`Avg Daily Budget Usd: 45`, `Visitor Rating: 4.8`, `Unesco Heritage Sites: 1`) are tagged **`Preserved Non-String`**.
    - Briefly toggle **Custom Destination Fields (JSON)** to show custom dictionary support.
 4. **Tab 3 — Hotel Reviews Bulk Translator / Tutorial Example 1 (2:00–2:45):**

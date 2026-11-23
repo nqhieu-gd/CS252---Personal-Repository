@@ -16,7 +16,10 @@
 | **Phase 2** | `9d9bb3c` | 2026-11-22 09:45:16 | `test(w7): add backend unit and FastAPI contract test suite` | `4 files (+431)`: `tests/{conftest,test_translator_service,test_rate_limiter,test_api_routes}.py` (`15 passed`) |
 | **Phase 3** | `9c43cf4` | 2026-11-22 09:58:13 | `feat(w7): scaffold React TypeScript frontend with Light/Dark theme, EN/VI i18n, and language combobox` | `21 files (+4,485)`: Vite + React 19 + TS + Tailwind v4 setup, `en.ts`/`vi.ts`, `I18nContext`, `ThemeContext`, `apiClient.ts`, `TopBar`, `LanguageCombobox`, `vitest` tests (`3 passed`) |
 | **Phase 4** | `71804ca` | 2026-11-22 09:58:13 | `feat(w7): build 4 interactive travel translation workspaces and single-command launcher` | `7 files (+1,690)`: `LiveTranslatorPanel.tsx`, `DestinationGuidePanel.tsx`, `HotelReviewsPanel.tsx`, `InquiryDeskPanel.tsx`, `App.tsx`, `main.tsx`, `start.ps1` |
-| **Phase 5** | `docs(w7)` | 2026-11-23 | `docs(w7): add Lab07 report.md, AI declaration in README.md, SetupGuide.md, and Git_Commit_History.md` | `4 files`: `W7/report.md`, `W7/README.md`, `W7/SetupGuide.md`, `W7/Git_Commit_History.md` |
+| **Phase 5** | `94d6c5e` | 2026-11-22 10:04:27 | `docs(w7): add Lab07 report.md, AI declaration in README.md, SetupGuide.md, and Git_Commit_History.md` | `4 files`: `W7/report.md`, `W7/README.md`, `W7/SetupGuide.md`, `W7/Git_Commit_History.md` |
+| **Doc Conversion** | `268c8f4` | 2026-11-23 16:25:49 | `Reformat API Translate into .md` | Replaced `W7/2025 CT - API Translate.docx.pdf` with `W7/2025 CT - API Translate.md` |
+| **Dataset Refinement** | `ad7194a` | 2026-11-23 17:04:22 | `feat(w7): replace foreign destination guides with Hue, Da Lat, Phu Quoc, Vung Tau, and Quy Nhon` | `3 files`: Updated `travel_samples.py`, `Development_Plan.md`, and `report.md` to 8 Vietnam destinations |
+| **Chaos-Test Hardening** | `2b07b56` | 2026-11-23 17:11:40 | `fix(w7): harden multi-sentence pronunciation, polymorphic detected lang, and custom JSON UI edge cases` | `6 files`: `adapter.py`, `test_translator_service.py`, `DestinationGuidePanel.tsx`, `LiveTranslatorPanel.tsx`, `HotelReviewsPanel.tsx`, `InquiryDeskPanel.tsx` |
 
 ---
 

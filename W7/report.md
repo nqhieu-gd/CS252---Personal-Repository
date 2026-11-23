@@ -13,7 +13,7 @@
 
 ## 1. Executive Summary & Website Overview
 
-**WanderLingo** is a full-stack **Multilingual Travel Companion** web application built for international travelers, hotel front-desk teams, and tour operators. Designed directly around the professor's tutorial (*"Using py-googletrans for Translation in Python: A Travel Application Tutorial"*, `2025 CT - API Translate.docx.pdf`), WanderLingo turns every Python snippet and travel scenario in the tutorial into an interactive, resilient, bilingual (`EN`/`VI`) web platform with Light and Dark themes.
+**WanderLingo** is a full-stack **Multilingual Travel Companion** web application built for international travelers visiting Vietnam, hotel front-desk teams, and tour operators. Designed directly around the professor's tutorial (*"Using py-googletrans for Translation in Python: A Travel Application Tutorial"*, [2025 CT - API Translate.md](./2025%20CT%20-%20API%20Translate.md)), WanderLingo turns every Python snippet and travel scenario in the tutorial into an interactive, resilient, bilingual (`EN`/`VI`) web platform with Light and Dark themes.
 
 Rather than offering a bare single-box text translator, WanderLingo organizes travel translation into **four purpose-built workspaces**:
 1. **Live Travel Translator & Phrasebook** — Instant text translation across all **245 languages** in `googletrans.LANGUAGES` (with the tutorial's 8 core travel languages pinned at the top), standalone language detection with confidence scores, phonetic pronunciation/romanization display, Web Speech audio playback, categorized travel phrasebook chips, and local session translation history.
@@ -59,7 +59,7 @@ Because `py-googletrans` is a **Python library** (not a client-side JavaScript S
 
 ---
 
-## 3. Traceability to the Professor's Tutorial (`2025 CT - API Translate.docx.pdf`)
+## 3. Traceability to the Professor's Tutorial (`2025 CT - API Translate.md`)
 
 | Tutorial Section | Tutorial Concept / Code Pattern | WanderLingo Implementation |
 | :--- | :--- | :--- |
@@ -87,12 +87,14 @@ During **Phase 0** live verification (`backend/scripts/smoke_googletrans.py`), f
 - Additionally, `Translator.__init__` defaults to `client_type='webapp'` (which attempts to scrape a removed `tkk` token from `translate.google.com`, resulting in HTTP `403`) or `client_type='gtx'` (frequently throttled with HTTP `429` on shared networks).
 - `GoogleTrans4Adapter` explicitly configures `translator.raise_exception = True`, `translator.client_type = "dict-chrome-ex"`, and preserves `translator.service_urls = list(service_urls)`. Live verification confirmed that all three tutorial presets (`default`, `direct`, `redundant`) return accurate translations, language detections, and phonetic romanizations.
 
-### 4.3 Filtering Echoed Origin Strings in `.pronunciation` (`normalize_pronunciation`)
+### 4.3 Filtering Echoed Origin Strings & Multi-Sentence Romanization in `.pronunciation` (`extract_pronunciation`)
 - When translating into a Latin-alphabet language that has no separate phonetic romanization row (such as Vietnamese, Spanish, or French), `googletrans` initializes `pron = origin` (the untranslated source text).
-- `normalize_pronunciation(raw_pron, translated_text, origin_text)` returns `None` whenever `raw_pron` is empty or identical to either `origin_text` or `translated_text`, ensuring the UI only renders the Pronunciation box for genuine phonetic transliterations (e.g., Japanese Romaji `"Dōmo arigatōgozaimasu."` or Chinese Pinyin `"Huānyíng lái dào wǒmen de jiǔdiàn"`).
+- Additionally, on multi-sentence or multi-line inputs, `googletrans/client.py` reads `data[0][1][-2]` (which is the second sentence row, yielding `[[]]` instead of a string), while the actual combined phonetic romanization row resides at `data[0][-1][2]` (`result.extra_data["translation"][-1][2]`).
+- `extract_pronunciation(result, translated_text, origin_text)` recovers multi-sentence romanization from `extra_data` when `result.pronunciation` is not a string, and `normalize_pronunciation` returns `None` whenever `raw_pron` is empty or identical to either `origin_text` or `translated_text`.
 
-### 4.4 Language Alias & Polymorphic Confidence Normalization (`translator_service.py`)
+### 4.4 Language Alias, Polymorphic `detection.lang`, & Confidence Normalization (`translator_service.py`, `adapter.py`)
 - Maps common aliases such as `'zh'` -> `'zh-cn'`, `'zh_TW'` -> `'zh-tw'`, and full language names (`'vietnamese'` -> `'vi'`) while validating against `googletrans.LANGUAGES` (returning HTTP `422` for invalid codes).
+- Safely unwraps `detection.lang` via `normalize_detected_lang()` when `googletrans` returns a `list[str]` on mixed-language paragraphs or an empty string `""` on emoji/numeric-only inputs.
 - Safely normalizes `detection.confidence` whether `googletrans` returns a `float`, `int`, `list`, or `None`.
 
 ---
@@ -118,5 +120,6 @@ During **Phase 0** live verification (`backend/scripts/smoke_googletrans.py`), f
 ## 6. Verification & Automated Test Results
 
 - **Phase 0 Live Smoke Verification (`backend/scripts/smoke_googletrans.py`):** Verified live against Google Translate endpoints across `default`, `direct`, and `redundant` `service_urls` presets for single translation (`EN -> VI`), non-Latin pronunciation (`EN -> JA`, `EN -> ZH-CN`, `EN -> ZH-TW`), language detection (`ES`), and bulk translation.
-- **Backend Automated Test Suite (`pytest -v`):** **15 / 15 passed** (`tests/test_translator_service.py`, `tests/test_rate_limiter.py`, `tests/test_api_routes.py`), covering language alias normalization, confidence/pronunciation normalization, TTL LRU caching, retry/failover on transient errors, skip-if-same-language in hotel reviews, `needs_translation` in travel inquiries, non-string preservation in destination guides, HTTP `422` validation, and HTTP `429` rate limiting with `Retry-After`.
+- **Backend Automated Test Suite (`pytest -v`):** **16 / 16 passed** (`tests/test_translator_service.py`, `tests/test_rate_limiter.py`, `tests/test_api_routes.py`), covering language alias normalization, polymorphic `detection.lang` and confidence normalization, single and multi-sentence pronunciation extraction, TTL LRU caching, retry/failover on transient errors, skip-if-same-language in hotel reviews, `needs_translation` in travel inquiries, non-string preservation in destination guides, HTTP `422` validation, and HTTP `429` rate limiting with `Retry-After`.
+- **Live Chaos & Fuzz Testing:** Verified against unpredictable inputs including emoji-only strings, numeric/punctuation strings, 4-language mixed sentences, multi-line Japanese/Vietnamese paragraphs with `\n`, HTML/script tags, and `0`/`false`/`null`/array JSON fields.
 - **Frontend Verification (`tsc --noEmit`, `vitest run`, `vite build`):** **3 / 3 passed** (`src/__tests__/i18nParity.test.ts` verifying 100% key parity between `en.ts` and `vi.ts`, and `src/__tests__/apiClient.test.ts`), zero TypeScript errors, and clean production bundle generation in `frontend/dist/`.
