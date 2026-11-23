@@ -152,7 +152,10 @@ export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
             <LanguageCombobox
               label={t('targetLanguage')}
               value={targetLang}
-              onChange={setTargetLang}
+              onChange={(code) => {
+                setTargetLang(code);
+                setBatchResult(null);
+              }}
               travelLanguages={travelLanguages}
               allLanguages={allLanguages}
             />

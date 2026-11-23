@@ -219,7 +219,11 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
             <LanguageCombobox
               label={t('staffLanguageLabel')}
               value={staffLang}
-              onChange={setStaffLang}
+              onChange={(code) => {
+                setStaffLang(code);
+                setProcessedMap({});
+                setReplyResults({});
+              }}
               travelLanguages={travelLanguages}
               allLanguages={allLanguages}
             />

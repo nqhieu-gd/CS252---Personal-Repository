@@ -116,9 +116,10 @@ export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
   };
 
   const handleSwapLanguages = () => {
-    const effectiveSrc = srcLang === 'auto' ? (result?.src ?? 'en') : srcLang;
+    const fallbackSrc = destLang === 'en' ? 'vi' : 'en';
+    const effectiveSrc = srcLang === 'auto' ? (result?.src ?? fallbackSrc) : srcLang;
     const nextSrc = destLang;
-    const nextDest = effectiveSrc;
+    const nextDest = effectiveSrc === destLang ? fallbackSrc : effectiveSrc;
     setSrcLang(nextSrc);
     setDestLang(nextDest);
     if (result?.text) {

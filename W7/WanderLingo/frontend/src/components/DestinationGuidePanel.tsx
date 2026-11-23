@@ -96,12 +96,29 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
   const activeSourceData: Record<string, unknown> = isCustomMode
     ? (() => {
         try {
-          return JSON.parse(customJsonText) as Record<string, unknown>;
+          const parsed = JSON.parse(customJsonText) as unknown;
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            return parsed as Record<string, unknown>;
+          }
+          return {};
         } catch {
           return {};
         }
       })()
     : (selectedSample?.data ?? {});
+
+  const formatFieldValue = (val: unknown): string => {
+    if (val === null) return 'null';
+    if (val === undefined) return '';
+    if (typeof val === 'object') {
+      try {
+        return JSON.stringify(val);
+      } catch {
+        return String(val);
+      }
+    }
+    return String(val);
+  };
 
   const formatFieldLabel = (key: string) =>
     key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -226,7 +243,7 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
                     </span>
                   </div>
                   <div className="text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm">
-                    {String(val)}
+                    {formatFieldValue(val)}
                   </div>
                 </div>
               );
@@ -277,7 +294,7 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
                       </span>
                     </div>
                     <div className="text-xs font-medium leading-relaxed text-[var(--text-primary)] sm:text-sm">
-                      {String(val)}
+                      {formatFieldValue(val)}
                     </div>
                   </div>
                 );

@@ -4,7 +4,12 @@ from __future__ import annotations
 import pytest
 
 from app.schemas import HotelReviewInput
-from app.services.adapter import normalize_confidence, normalize_pronunciation
+from app.services.adapter import (
+    extract_pronunciation,
+    normalize_confidence,
+    normalize_detected_lang,
+    normalize_pronunciation,
+)
 from app.services.translator_service import (
     InvalidLanguageCodeError,
     TranslationEngine,
@@ -33,6 +38,32 @@ def test_normalize_pronunciation_filters_echoed_origin_and_translated() -> None:
     assert (
         normalize_pronunciation("Dōmo arigatōgozaimasu.", "どうもありがとうございます。", "Thank you")
         == "Dōmo arigatōgozaimasu."
+    )
+
+
+def test_normalize_detected_lang_and_multi_sentence_pronunciation() -> None:
+    assert normalize_detected_lang(["VI", "en"]) == "vi"
+    assert normalize_detected_lang(["", "fr"]) == "fr"
+    assert normalize_detected_lang([]) == "en"
+    assert normalize_detected_lang("") == "en"
+    assert normalize_detected_lang(None) == "en"
+
+    class DummyMultiSentenceTranslated:
+        pronunciation = [[]]
+        extra_data = {
+            "translation": [
+                ["1 行目: フエへようこそ。\n", "Line 1: Welcome to Hue.\n", None, None, 3],
+                [None, None, "1-Gyō-me: Fue e yōkoso."],
+            ]
+        }
+
+    assert (
+        extract_pronunciation(
+            DummyMultiSentenceTranslated(),
+            "1 行目: フエへようこそ。",
+            "Line 1: Welcome to Hue.",
+        )
+        == "1-Gyō-me: Fue e yōkoso."
     )
 
 

@@ -44,6 +44,18 @@ def normalize_confidence(raw_conf: Any) -> Optional[float]:
         return None
 
 
+def normalize_detected_lang(raw_lang: Any) -> str:
+    """Normalize googletrans detected lang which may be str, list[str], empty, or None."""
+    if isinstance(raw_lang, list):
+        for item in raw_lang:
+            if isinstance(item, str) and item.strip():
+                return item.strip().lower()
+        return "en"
+    if isinstance(raw_lang, str) and raw_lang.strip():
+        return raw_lang.strip().lower()
+    return "en"
+
+
 def normalize_pronunciation(
     raw_pron: Any,
     translated_text: str,
@@ -51,8 +63,8 @@ def normalize_pronunciation(
 ) -> Optional[str]:
     """Return pronunciation string only when present, non-empty, and distinct from origin & translated text.
 
-    Note: googletrans initializes `pron = origin` when no romanization row exists in Google's payload.
-    Checking against both `translated_text` and `origin_text` prevents echoing the input text as pronunciation.
+    Note: googletrans initializes `pron = origin` when no romanization row exists in Google's payload,
+    and sets `pron = [[]]` on multi-sentence inputs because `data[0][1]` is sentence #2 rather than `data[0][-1]`.
     """
     if not isinstance(raw_pron, str):
         return None
@@ -62,6 +74,35 @@ def normalize_pronunciation(
     if cleaned == translated_text.strip() or (origin_text and cleaned == origin_text.strip()):
         return None
     return cleaned
+
+
+def extract_pronunciation(
+    result: Any,
+    translated_text: str,
+    origin_text: str = "",
+) -> Optional[str]:
+    """Extract pronunciation from Translated object, including multi-sentence fallback in extra_data."""
+    direct = normalize_pronunciation(
+        getattr(result, "pronunciation", None),
+        translated_text,
+        origin_text,
+    )
+    if direct is not None:
+        return direct
+
+    extra_data = getattr(result, "extra_data", None)
+    if isinstance(extra_data, dict):
+        rows = extra_data.get("translation")
+        if isinstance(rows, list) and rows:
+            last_row = rows[-1]
+            if (
+                isinstance(last_row, list)
+                and len(last_row) >= 3
+                and last_row[0] is None
+                and isinstance(last_row[2], str)
+            ):
+                return normalize_pronunciation(last_row[2], translated_text, origin_text)
+    return None
 
 
 def _configure_translator(translator: Translator, service_urls: List[str]) -> Translator:
@@ -120,13 +161,9 @@ class GoogleTrans4Adapter:
             result = await translator.translate(text, src=src, dest=dest)
             translated_str = str(getattr(result, "text", text))
             origin_str = str(getattr(result, "origin", text))
-            src_code = str(getattr(result, "src", src)).lower()
+            src_code = normalize_detected_lang(getattr(result, "src", src))
             dest_code = str(getattr(result, "dest", dest)).lower()
-            pron = normalize_pronunciation(
-                getattr(result, "pronunciation", None),
-                translated_str,
-                origin_str,
-            )
+            pron = extract_pronunciation(result, translated_str, origin_str)
             return RawTranslatedResult(
                 origin=origin_str,
                 text=translated_str,
@@ -147,7 +184,7 @@ class GoogleTrans4Adapter:
         ) as translator:
             _configure_translator(translator, service_urls)
             detection = await translator.detect(text)
-            lang_code = str(getattr(detection, "lang", "en")).lower()
+            lang_code = normalize_detected_lang(getattr(detection, "lang", "en"))
             conf = normalize_confidence(getattr(detection, "confidence", None))
             return RawDetectedResult(lang=lang_code, confidence=conf)
 
