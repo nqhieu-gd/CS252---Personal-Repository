@@ -12,6 +12,7 @@ export const API_ROUTES = {
   DETECT: `${BASE_URL}/api/detect`,
   TRANSLATE: `${BASE_URL}/api/translate`,
   TRANSLATE_BULK: `${BASE_URL}/api/translate/bulk`,
+  TRANSLATE_MULTI: `${BASE_URL}/api/translate/multi`,
   TRAVEL_SAMPLES: `${BASE_URL}/api/travel/samples`,
   TRAVEL_REVIEWS: `${BASE_URL}/api/travel/reviews`,
   TRAVEL_INQUIRY: `${BASE_URL}/api/travel/inquiry`,
@@ -21,3 +22,4 @@ export const API_ROUTES = {
 
 export const MAX_TEXT_LENGTH = 5000;
 export const MAX_HISTORY_ITEMS = 25;
+export const MAX_FAVORITE_ITEMS = 50;

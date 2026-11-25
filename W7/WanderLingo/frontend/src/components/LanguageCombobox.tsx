@@ -31,8 +31,15 @@ export const LanguageCombobox: React.FC<LanguageComboboxProps> = ({
         setOpen(false);
       }
     };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
     document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
   }, []);
 
   const currentName = useMemo(() => {
@@ -67,33 +74,41 @@ export const LanguageCombobox: React.FC<LanguageComboboxProps> = ({
 
   return (
     <div ref={containerRef} className="relative flex flex-col gap-1.5">
-      <span className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+      <span className="px-1 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
         {label}
       </span>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex items-center justify-between gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-3 text-base font-medium text-[var(--text-primary)] shadow-xs transition hover:border-[var(--accent-primary)]"
+        className="flex min-h-[46px] items-center justify-between gap-2.5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-2.5 text-base font-semibold text-[var(--text-primary)] shadow-2xs transition hover:border-[var(--accent-primary)]"
       >
-        <span className="flex items-center gap-2 truncate">
-          <Globe className="h-4 w-4 shrink-0 text-[var(--accent-primary)]" />
+        <span className="flex items-center gap-2.5 truncate">
+          <Globe className="h-4 w-4 shrink-0 text-[var(--accent-primary)]" aria-hidden="true" />
           <span className="truncate">{currentName}</span>
         </span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-[var(--text-muted)]" />
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-[var(--text-muted)] transition-transform ${
+            open ? 'rotate-180' : ''
+          }`}
+          aria-hidden="true"
+        />
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 z-40 mt-1.5 w-80 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] p-2.5 shadow-xl sm:w-96">
-          <div className="relative mb-2">
-            <Search className="pointer-events-none absolute top-3 left-3 h-4 w-4 text-[var(--text-muted)]" />
+        <div className="wl-dialog wl-animate-dialog absolute top-full left-0 z-40 mt-2 w-80 p-3 sm:w-96">
+          <div className="relative mb-2.5">
+            <Search
+              className="pointer-events-none absolute top-3 left-3.5 h-4 w-4 text-[var(--text-muted)]"
+              aria-hidden="true"
+            />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('searchLanguagePlaceholder')}
               autoFocus
-              className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] py-2 pr-3 pl-9 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
+              className="w-full rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] py-2 pr-4 pl-10 text-sm text-[var(--text-primary)]"
             />
           </div>
 
@@ -102,33 +117,33 @@ export const LanguageCombobox: React.FC<LanguageComboboxProps> = ({
               <button
                 type="button"
                 onClick={() => selectCode('auto')}
-                className={`mb-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left font-medium transition ${
+                className={`mb-1.5 flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left font-semibold transition ${
                   value === 'auto'
                     ? 'bg-[var(--accent-soft)] text-[var(--accent-primary)]'
                     : 'hover:bg-[var(--bg-surface-muted)]'
                 }`}
               >
                 <span>{t('autoDetect')}</span>
-                <span className="rounded bg-[var(--bg-surface-muted)] px-1.5 py-0.5 font-mono text-xs">
+                <span className="rounded-full bg-[var(--bg-surface-muted)] px-2 py-0.5 font-mono text-xs">
                   auto
                 </span>
               </button>
             )}
 
             {filteredTravel.length > 0 && (
-              <div className="mb-2">
+              <div className="mb-2.5">
                 <div className="px-2 py-1 text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)]">
                   {t('pinnedTravelLanguages')}
                 </div>
-                <div className="grid grid-cols-2 gap-1">
+                <div className="grid grid-cols-2 gap-1.5">
                   {filteredTravel.map((lang) => (
                     <button
                       key={`travel-${lang.code}`}
                       type="button"
                       onClick={() => selectCode(lang.code)}
-                      className={`flex items-center justify-between rounded-lg px-2.5 py-2 text-left transition ${
+                      className={`flex items-center justify-between rounded-xl px-3 py-2 text-left transition ${
                         value === lang.code
-                          ? 'bg-[var(--accent-soft)] font-semibold text-[var(--accent-primary)]'
+                          ? 'bg-[var(--accent-soft)] font-bold text-[var(--accent-primary)]'
                           : 'hover:bg-[var(--bg-surface-muted)]'
                       }`}
                     >
@@ -149,9 +164,9 @@ export const LanguageCombobox: React.FC<LanguageComboboxProps> = ({
                   key={`all-${lang.code}`}
                   type="button"
                   onClick={() => selectCode(lang.code)}
-                  className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left transition ${
+                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition ${
                     value === lang.code
-                      ? 'bg-[var(--accent-soft)] font-semibold text-[var(--accent-primary)]'
+                      ? 'bg-[var(--accent-soft)] font-bold text-[var(--accent-primary)]'
                       : 'hover:bg-[var(--bg-surface-muted)]'
                   }`}
                 >

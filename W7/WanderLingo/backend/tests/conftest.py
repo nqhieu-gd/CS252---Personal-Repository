@@ -10,7 +10,13 @@ from app.dependencies import (
     set_translation_engine,
 )
 from app.main import app
-from app.services.adapter import RawDetectedResult, RawTranslatedResult
+from app.services.adapter import (
+    RawDefinitionEntry,
+    RawDetectedResult,
+    RawDictionaryEntry,
+    RawTranslatedResult,
+    fallback_typo_suggestion,
+)
 from app.services.cache import TTLLRUCache
 from app.services.rate_limiter import SlidingWindowRateLimiter
 from app.services.translator_service import TranslationEngine
@@ -101,12 +107,35 @@ class FakeGoogleTransAdapter:
             (text, dest),
             (f"[{dest}] {text}", f"pron({dest}): {text}" if dest in ("ja", "ko", "zh-cn") else None),
         )
+        dym, dym_tokens = fallback_typo_suggestion(text)
+        alts = ["Làm cách nào để đặt phòng?"] if "reverve" in text.lower() and dest == "vi" else []
+        dict_entries = (
+            [RawDictionaryEntry(part_of_speech="verb", terms=["đặt trước", "dự trữ"])]
+            if text.strip().lower() == "reserve"
+            else []
+        )
+        def_entries = (
+            [
+                RawDefinitionEntry(
+                    part_of_speech="verb",
+                    definition="arrange for a room or seat to be kept for the use of a particular person.",
+                    example="I would like to reserve a room in Hanoi.",
+                )
+            ]
+            if text.strip().lower() == "reserve"
+            else []
+        )
         return RawTranslatedResult(
             origin=text,
             text=translated,
             src=detected_src,
             dest=dest,
             pronunciation=pron,
+            did_you_mean=dym,
+            corrected_tokens=dym_tokens,
+            alternatives=alts,
+            dictionary=dict_entries,
+            definitions=def_entries,
         )
 
 

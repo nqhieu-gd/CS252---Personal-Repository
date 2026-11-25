@@ -93,6 +93,17 @@ class TranslateRequest(BaseModel):
         return value
 
 
+class DictionaryEntryDTO(BaseModel):
+    part_of_speech: str
+    terms: List[str] = Field(default_factory=list)
+
+
+class DefinitionEntryDTO(BaseModel):
+    part_of_speech: str
+    definition: str
+    example: Optional[str] = None
+
+
 class TranslateResponse(BaseModel):
     origin: str
     text: str
@@ -102,8 +113,56 @@ class TranslateResponse(BaseModel):
     dest_name: str
     pronunciation: Optional[str] = None
     confidence: Optional[float] = None
+    did_you_mean: Optional[str] = None
+    corrected_tokens: List[str] = Field(default_factory=list)
+    alternatives: List[str] = Field(default_factory=list)
+    dictionary: List[DictionaryEntryDTO] = Field(default_factory=list)
+    definitions: List[DefinitionEntryDTO] = Field(default_factory=list)
     skipped: bool = False
     cached: bool = False
+    service_preset: str
+    latency_ms: float
+
+
+class MultiTargetTranslateRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=MAX_TEXT_LENGTH)
+    src: str = Field(default="auto")
+    targets: List[str] = Field(..., min_length=1, max_length=6)
+    service_preset: str = Field(default=DEFAULT_SERVICE_PRESET)
+
+    @field_validator("text")
+    @classmethod
+    def validate_non_blank(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Text must not be empty or whitespace only.")
+        return stripped
+
+    @field_validator("service_preset")
+    @classmethod
+    def validate_preset(cls, value: str) -> str:
+        if value not in SERVICE_URL_PRESETS:
+            raise ValueError(f"Unsupported service_preset '{value}'. Allowed: {list(SERVICE_URL_PRESETS.keys())}")
+        return value
+
+
+class MultiTargetItem(BaseModel):
+    dest: str
+    dest_name: str
+    text: Optional[str] = None
+    pronunciation: Optional[str] = None
+    skipped: bool = False
+    cached: bool = False
+    error: Optional[str] = None
+
+
+class MultiTargetTranslateResponse(BaseModel):
+    origin: str
+    src: str
+    src_name: str
+    did_you_mean: Optional[str] = None
+    corrected_tokens: List[str] = Field(default_factory=list)
+    results: List[MultiTargetItem]
     service_preset: str
     latency_ms: float
 
@@ -254,6 +313,7 @@ class TravelInquiryResponse(BaseModel):
     target_language: str
     translated_text: str
     pronunciation: Optional[str] = None
+    did_you_mean: Optional[str] = None
     needs_translation: bool
     cached: bool
     service_preset: str

@@ -79,8 +79,8 @@ export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
 
     const newItems: HotelReviewItem[] = lines.map((line, i) => ({
       id: `custom-${Date.now()}-${i}`,
-      author: `Custom Traveler #${reviews.length + i + 1}`,
-      hotel_name: 'WanderLingo Partner Hotel',
+      author: `Verified Guest #${reviews.length + i + 1}`,
+      hotel_name: 'WanderLingo Partner Stay',
       rating: 5.0,
       stay_date: new Date().toISOString().slice(0, 10),
       text: line,
@@ -99,55 +99,62 @@ export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
   return (
     <div className="space-y-6">
       {/* Header & Controls */}
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-xs">
+      <section className="wl-card p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="flex items-center gap-2 text-lg font-bold text-[var(--text-primary)] sm:text-xl">
-              <Star className="h-5 w-5 text-amber-400" />
-              <span>{t('reviewsHeaderTitle')}</span>
-            </h2>
-            <p className="mt-1 max-w-3xl text-sm text-[var(--text-secondary)] sm:text-base">
-              {t('reviewsHeaderSubtitle')}
-            </p>
+          <div className="flex items-start gap-3.5">
+            <div
+              aria-hidden="true"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-warm-soft)] text-[var(--accent-warm)]"
+            >
+              <Star className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="font-heading text-xl font-extrabold text-[var(--text-primary)]">
+                {t('reviewsHeaderTitle')}
+              </h2>
+              <p className="mt-1 max-w-3xl text-base text-[var(--text-secondary)]">
+                {t('reviewsHeaderSubtitle')}
+              </p>
+            </div>
           </div>
 
           <button
             type="button"
             onClick={handleResetSamples}
-            className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] hover:border-[var(--accent-primary)]"
+            className="flex min-h-[44px] items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-4 py-2 text-sm font-bold text-[var(--text-primary)] transition hover:border-[var(--accent-primary)]"
           >
-            <RotateCcw className="h-4 w-4" />
+            <RotateCcw className="h-4 w-4" aria-hidden="true" />
             <span>{t('resetSampleReviewsBtn')}</span>
           </button>
         </div>
 
         {/* Custom Bulk Review Input */}
-        <div className="mt-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-4">
-          <div className="mb-2 text-sm font-semibold text-[var(--text-primary)]">
+        <div className="wl-well mt-5 p-4">
+          <div className="mb-2 text-sm font-bold text-[var(--text-primary)]">
             {t('addCustomReviewTitle')}
           </div>
-          <div className="flex flex-col gap-2.5 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <textarea
               rows={2}
               value={customBatchText}
               onChange={(e) => setCustomBatchText(e.target.value)}
               placeholder={t('addCustomReviewPlaceholder')}
-              className="flex-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] sm:text-base"
+              className="flex-1 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3.5 text-base text-[var(--text-primary)]"
             />
             <button
               type="button"
               disabled={!customBatchText.trim()}
               onClick={handleAppendCustomReviews}
-              className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] hover:border-[var(--accent-primary)] disabled:opacity-50"
+              className="flex min-h-[46px] shrink-0 items-center justify-center gap-2 rounded-full border border-[var(--border-strong)] bg-[var(--bg-surface)] px-5 py-2.5 text-sm font-bold text-[var(--text-primary)] transition hover:border-[var(--accent-primary)] disabled:opacity-50"
             >
-              <Plus className="h-4 w-4 text-[var(--accent-primary)]" />
+              <Plus className="h-4 w-4 text-[var(--accent-primary)]" aria-hidden="true" />
               <span>{t('appendReviewsBtn')}</span>
             </button>
           </div>
         </div>
 
         {/* Target Language & Batch Translate Button */}
-        <div className="mt-4 flex flex-wrap items-end justify-between gap-3 border-t border-[var(--border-subtle)] pt-4">
+        <div className="mt-5 flex flex-wrap items-end justify-between gap-4 border-t border-[var(--border-subtle)] pt-5">
           <div className="w-full sm:w-80">
             <LanguageCombobox
               label={t('targetLanguage')}
@@ -165,9 +172,9 @@ export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
             type="button"
             disabled={isTranslating || reviews.length === 0}
             onClick={() => void handleTranslateAll()}
-            className="flex items-center gap-2 rounded-xl bg-[var(--accent-primary)] px-5 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 sm:text-base"
+            className="flex min-h-[46px] items-center gap-2 rounded-full bg-[var(--accent-primary)] px-6 py-2.5 text-base font-bold text-white shadow-sm transition hover:bg-[var(--accent-primary-hover)] disabled:opacity-50"
           >
-            <Sparkles className="h-4 w-4" />
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
             <span>
               {isTranslating
                 ? t('translatingBtn')
@@ -175,36 +182,42 @@ export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
             </span>
           </button>
         </div>
-      </div>
+      </section>
 
       {/* Summary KPI Bar */}
       {batchResult && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
-            <div className="text-sm text-[var(--text-muted)]">{t('summaryTotal')}</div>
-            <div className="mt-1 text-2xl font-bold text-[var(--text-primary)]">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="wl-card p-4 sm:p-5">
+            <div className="text-sm font-semibold text-[var(--text-muted)]">{t('summaryTotal')}</div>
+            <div className="font-heading mt-1 text-3xl font-extrabold text-[var(--text-primary)]">
               {batchResult.summary.total}
             </div>
           </div>
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
-            <div className="text-sm text-[var(--text-muted)]">{t('summaryTranslated')}</div>
-            <div className="mt-1 text-2xl font-bold text-[var(--status-good-text)]">
+          <div className="wl-card p-4 sm:p-5">
+            <div className="text-sm font-semibold text-[var(--text-muted)]">
+              {t('summaryTranslated')}
+            </div>
+            <div className="font-heading mt-1 text-3xl font-extrabold text-[var(--status-good-text)]">
               {batchResult.summary.translated_count}
             </div>
           </div>
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
-            <div className="text-sm text-[var(--text-muted)]">{t('summarySkipped')}</div>
-            <div className="mt-1 text-2xl font-bold text-[var(--status-caution-text)]">
+          <div className="wl-card p-4 sm:p-5">
+            <div className="text-sm font-semibold text-[var(--text-muted)]">
+              {t('summarySkipped')}
+            </div>
+            <div className="font-heading mt-1 text-3xl font-extrabold text-[var(--status-caution-text)]">
               {batchResult.summary.skipped_count}
             </div>
           </div>
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
-            <div className="text-sm text-[var(--text-muted)]">{t('summaryLangBreakdown')}</div>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
+          <div className="wl-card p-4 sm:p-5">
+            <div className="text-sm font-semibold text-[var(--text-muted)]">
+              {t('summaryLangBreakdown')}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
               {Object.entries(batchResult.summary.language_breakdown).map(([lang, count]) => (
                 <span
                   key={lang}
-                  className="rounded-md bg-[var(--accent-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--accent-primary)]"
+                  className="rounded-full bg-[var(--accent-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--accent-primary)]"
                 >
                   {lang}: {count}
                 </span>
@@ -215,20 +228,19 @@ export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
       )}
 
       {/* Review Cards Grid */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {reviews.map((rev, idx) => {
           const translatedItem =
             batchResult?.results.find((r) => r.id === rev.id) ?? batchResult?.results[idx];
 
           return (
-            <div
-              key={rev.id}
-              className="flex flex-col justify-between rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-xs"
-            >
+            <article key={rev.id} className="wl-card flex flex-col justify-between p-5 sm:p-6">
               <div>
-                <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <div className="text-base font-bold text-[var(--text-primary)]">{rev.author}</div>
+                    <div className="font-heading text-lg font-bold text-[var(--text-primary)]">
+                      {rev.author}
+                    </div>
                     {rev.hotel_name && (
                       <div className="text-sm text-[var(--text-muted)]">
                         {rev.hotel_name} {rev.stay_date ? `· ${rev.stay_date}` : ''}
@@ -237,8 +249,8 @@ export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
                   </div>
 
                   {rev.rating && (
-                    <span className="flex items-center gap-1 rounded-lg bg-amber-500/15 px-2.5 py-1 text-sm font-bold text-amber-500">
-                      <Star className="h-4 w-4 fill-amber-400" />
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-warm-soft)] px-3 py-1 text-sm font-bold text-[var(--accent-warm)]">
+                      <Star className="h-4 w-4 fill-current" aria-hidden="true" />
                       {rev.rating.toFixed(1)}
                     </span>
                   )}
@@ -248,7 +260,7 @@ export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
                 {translatedItem && (
                   <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
                     {translatedItem.source_lang_name && (
-                      <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 font-semibold text-[var(--accent-primary)]">
+                      <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 font-bold text-[var(--accent-primary)]">
                         {translatedItem.source_lang_name} ({translatedItem.source_lang})
                       </span>
                     )}
@@ -258,13 +270,13 @@ export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
                       </span>
                     )}
                     {translatedItem.skipped ? (
-                      <span className="flex items-center gap-1 rounded-full bg-[var(--status-caution-bg)] px-3 py-1 font-semibold text-[var(--status-caution-text)]">
-                        <SkipForward className="h-3.5 w-3.5" />
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--status-caution-bg)] px-3 py-1 font-bold text-[var(--status-caution-text)]">
+                        <SkipForward className="h-3.5 w-3.5" aria-hidden="true" />
                         {t('skippedSameLangBadge')}
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1 rounded-full bg-[var(--status-good-bg)] px-3 py-1 font-semibold text-[var(--status-good-text)]">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--status-good-bg)] px-3 py-1 font-bold text-[var(--status-good-text)]">
+                        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                         {batchResult?.target_language_name}
                       </span>
                     )}
@@ -272,8 +284,8 @@ export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
                 )}
 
                 {/* Original Review */}
-                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-3.5 text-sm">
-                  <div className="mb-1 font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                <div className="wl-well p-4">
+                  <div className="mb-1 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
                     {t('originalReviewLabel')}
                   </div>
                   <p className="text-base leading-relaxed text-[var(--text-primary)]">{rev.text}</p>
@@ -281,8 +293,8 @@ export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
 
                 {/* Translated Review */}
                 {translatedItem && (
-                  <div className="mt-3 rounded-xl border border-[var(--accent-primary)]/30 bg-[var(--accent-soft)]/40 p-3.5 text-sm">
-                    <div className="mb-1 font-semibold uppercase tracking-wider text-[var(--accent-primary)]">
+                  <div className="mt-3 rounded-2xl border border-[var(--accent-primary)]/30 bg-[var(--accent-soft)] p-4">
+                    <div className="mb-1 text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)]">
                       {t('translatedReviewLabel')} ({batchResult?.target_language_name})
                     </div>
                     {translatedItem.error ? (
@@ -291,7 +303,7 @@ export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
                       </p>
                     ) : (
                       <>
-                        <p className="text-base font-semibold leading-relaxed text-[var(--text-primary)]">
+                        <p className="text-base font-bold leading-relaxed text-[var(--text-primary)]">
                           {translatedItem.translated}
                         </p>
                         {translatedItem.pronunciation && (
@@ -304,7 +316,7 @@ export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
                   </div>
                 )}
               </div>
-            </div>
+            </article>
           );
         })}
       </div>

@@ -9,6 +9,8 @@ from app.schemas import (
     BulkTranslateResponse,
     DetectRequest,
     DetectResponse,
+    MultiTargetTranslateRequest,
+    MultiTargetTranslateResponse,
     TranslateRequest,
     TranslateResponse,
 )
@@ -55,5 +57,18 @@ async def translate_bulk(
         src=payload.src,
         dest=payload.dest,
         skip_same_language=payload.skip_same_language,
+        service_preset=payload.service_preset,
+    )
+
+
+@router.post("/translate/multi", response_model=MultiTargetTranslateResponse)
+async def translate_multi_target(
+    payload: MultiTargetTranslateRequest,
+    engine: TranslationEngine = Depends(get_translation_engine),
+) -> MultiTargetTranslateResponse:
+    return await engine.translate_multi_target(
+        text=payload.text,
+        src=payload.src,
+        targets=payload.targets,
         service_preset=payload.service_preset,
     )

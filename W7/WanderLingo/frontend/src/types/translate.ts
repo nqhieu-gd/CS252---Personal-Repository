@@ -45,6 +45,17 @@ export interface DetectResponse {
   latency_ms: number;
 }
 
+export interface DictionaryEntry {
+  part_of_speech: string;
+  terms: string[];
+}
+
+export interface DefinitionEntry {
+  part_of_speech: string;
+  definition: string;
+  example: string | null;
+}
+
 export interface TranslateResponse {
   origin: string;
   text: string;
@@ -54,8 +65,34 @@ export interface TranslateResponse {
   dest_name: string;
   pronunciation: string | null;
   confidence: number | null;
+  did_you_mean: string | null;
+  corrected_tokens: string[];
+  alternatives: string[];
+  dictionary: DictionaryEntry[];
+  definitions: DefinitionEntry[];
   skipped: boolean;
   cached: boolean;
+  service_preset: ServicePresetKey;
+  latency_ms: number;
+}
+
+export interface MultiTargetItem {
+  dest: string;
+  dest_name: string;
+  text: string | null;
+  pronunciation: string | null;
+  skipped: boolean;
+  cached: boolean;
+  error: string | null;
+}
+
+export interface MultiTargetTranslateResponse {
+  origin: string;
+  src: string;
+  src_name: string;
+  did_you_mean: string | null;
+  corrected_tokens: string[];
+  results: MultiTargetItem[];
   service_preset: ServicePresetKey;
   latency_ms: number;
 }
@@ -150,6 +187,7 @@ export interface TravelInquiryResponse {
   target_language: string;
   translated_text: string;
   pronunciation: string | null;
+  did_you_mean?: string | null;
   needs_translation: boolean;
   cached: boolean;
   service_preset: ServicePresetKey;

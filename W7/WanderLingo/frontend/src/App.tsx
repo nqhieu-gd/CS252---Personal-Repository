@@ -41,7 +41,15 @@ export const App: React.FC = () => {
     phrasebook: [],
   });
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
-  const { history, addHistoryEntry, clearHistory } = useTranslationHistory();
+  const {
+    history,
+    addHistoryEntry,
+    clearHistory,
+    favorites,
+    isFavorite,
+    toggleFavorite,
+    clearFavorites,
+  } = useTranslationHistory();
 
   const refreshHealth = useCallback(async () => {
     try {
@@ -87,7 +95,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)]">
+    <div className="flex min-h-screen flex-col text-[var(--text-primary)]">
       <TopBar
         activeTab={activeTab}
         onSelectTab={setActiveTab}
@@ -97,7 +105,7 @@ export const App: React.FC = () => {
         onClearCache={() => void handleClearCache()}
       />
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-7 sm:px-6">
         <StatusBanner error={errorBanner} onDismiss={() => setErrorBanner(null)} />
 
         {activeTab === 'translator' && (
@@ -107,6 +115,10 @@ export const App: React.FC = () => {
             phrasebook={samples.phrasebook}
             servicePreset={servicePreset}
             history={history}
+            favorites={favorites}
+            isFavorite={isFavorite}
+            onToggleFavorite={toggleFavorite}
+            onClearFavorites={clearFavorites}
             onAddHistory={addHistoryEntry}
             onClearHistory={clearHistory}
             onError={setErrorBanner}

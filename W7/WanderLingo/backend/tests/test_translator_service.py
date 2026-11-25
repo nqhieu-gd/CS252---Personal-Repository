@@ -5,6 +5,9 @@ import pytest
 
 from app.schemas import HotelReviewInput
 from app.services.adapter import (
+    extract_alternatives,
+    extract_did_you_mean,
+    extract_dictionary_and_definitions,
     extract_pronunciation,
     normalize_confidence,
     normalize_detected_lang,
@@ -192,3 +195,59 @@ async def test_destination_guide_preserves_non_string_fields(
     assert "empty_note" in res.preserved_fields
     assert res.translated_data["estimated_daily_budget_usd"] == 45
     assert res.translated_data["recommended_stay_days"] == 3
+
+
+def test_extract_did_you_mean_alternatives_and_dictionary() -> None:
+    class DummyMistakeResult:
+        extra_data = {
+            "possible-mistakes": [
+                "<b><i>How</i></b> do I <b><i>reserve</i></b> a room?",
+                "How do I reserve a room?",
+                [1],
+                None,
+                None,
+                True,
+            ],
+            "possible-translations": [
+                [
+                    "How do I reserve a room?",
+                    None,
+                    [
+                        ["Làm thế nào để tôi đặt phòng?", None, True],
+                        ["Làm cách nào để đặt phòng?", None, True],
+                    ],
+                ]
+            ],
+            "all-translations": [
+                ["verb", ["đặt phòng", "giữ chỗ"]],
+            ],
+            "definitions": [
+                ["verb", [["keep a room for someone", "id1", "reserve a double room"]]],
+            ],
+        }
+
+    dym, tokens = extract_did_you_mean(DummyMistakeResult(), "Hpw do I reverve a room?")
+    assert dym == "How do I reserve a room?"
+    assert tokens == ["How", "reserve"]
+
+    alts = extract_alternatives(DummyMistakeResult(), "Làm thế nào để tôi đặt phòng?")
+    assert alts == ["Làm cách nào để đặt phòng?"]
+
+    dict_entries, def_entries = extract_dictionary_and_definitions(DummyMistakeResult())
+    assert len(dict_entries) == 1 and dict_entries[0].part_of_speech == "verb"
+    assert len(def_entries) == 1 and def_entries[0].example == "reserve a double room"
+
+
+@pytest.mark.asyncio
+async def test_multi_target_translation_and_typo_suggestion(
+    engine: TranslationEngine,
+) -> None:
+    multi = await engine.translate_multi_target(
+        "Hpw do I reverve a room?",
+        src="auto",
+        targets=["vi", "ja", "ko"],
+    )
+    assert multi.did_you_mean == "How do I reserve a room?"
+    assert multi.corrected_tokens == ["How", "reserve"]
+    assert len(multi.results) == 3
+    assert [r.dest for r in multi.results] == ["vi", "ja", "ko"]

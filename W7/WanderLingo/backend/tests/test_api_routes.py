@@ -29,10 +29,17 @@ def test_detect_and_translate_endpoints(client: TestClient) -> None:
 
     tr = client.post(
         "/api/translate",
-        json={"text": "Hello, how are you?", "src": "auto", "dest": "vi"},
+        json={"text": "Hpw do I reverve a room?", "src": "auto", "dest": "vi"},
     )
     assert tr.status_code == 200
-    assert tr.json()["text"] == "Xin chào bạn khỏe không?"
+    assert tr.json()["did_you_mean"] == "How do I reserve a room?"
+
+    multi = client.post(
+        "/api/translate/multi",
+        json={"text": "Hello, how are you?", "src": "en", "targets": ["vi", "ja"]},
+    )
+    assert multi.status_code == 200
+    assert len(multi.json()["results"]) == 2
 
 
 def test_invalid_language_returns_422(client: TestClient) -> None:

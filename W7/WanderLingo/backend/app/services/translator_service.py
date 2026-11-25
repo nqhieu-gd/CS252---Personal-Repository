@@ -26,13 +26,17 @@ from app.schemas import (
     BulkItemResult,
     BulkSummary,
     BulkTranslateResponse,
+    DefinitionEntryDTO,
     DestinationTranslateResponse,
     DetectResponse,
+    DictionaryEntryDTO,
     HotelReviewInput,
     HotelReviewResult,
     HotelReviewTranslateResponse,
     LanguageItem,
     LanguagesResponse,
+    MultiTargetItem,
+    MultiTargetTranslateResponse,
     ServicePresetInfo,
     TranslateResponse,
     TravelInquiryReplyResponse,
@@ -43,6 +47,7 @@ from app.services.adapter import (
     RawDetectedResult,
     RawTranslatedResult,
     TranslatorAdapter,
+    fallback_typo_suggestion,
     get_raw_languages,
 )
 from app.services.cache import TTLLRUCache
@@ -249,6 +254,7 @@ class TranslationEngine:
 
         # Short-circuit if explicit source and destination are identical
         if norm_src != "auto" and norm_src == norm_dest:
+            dym, dym_tokens = fallback_typo_suggestion(cleaned)
             return TranslateResponse(
                 origin=cleaned,
                 text=cleaned,
@@ -258,6 +264,8 @@ class TranslationEngine:
                 dest_name=self.get_language_name(norm_dest),
                 pronunciation=None,
                 confidence=1.0,
+                did_you_mean=dym,
+                corrected_tokens=dym_tokens,
                 skipped=True,
                 cached=False,
                 service_preset=service_preset,
@@ -279,6 +287,21 @@ class TranslationEngine:
                 dest_name=self.get_language_name(norm_dest),
                 pronunciation=raw_res.pronunciation,
                 confidence=cached_conf,
+                did_you_mean=raw_res.did_you_mean,
+                corrected_tokens=list(raw_res.corrected_tokens),
+                alternatives=list(raw_res.alternatives),
+                dictionary=[
+                    DictionaryEntryDTO(part_of_speech=d.part_of_speech, terms=list(d.terms))
+                    for d in raw_res.dictionary
+                ],
+                definitions=[
+                    DefinitionEntryDTO(
+                        part_of_speech=df.part_of_speech,
+                        definition=df.definition,
+                        example=df.example,
+                    )
+                    for df in raw_res.definitions
+                ],
                 skipped=is_skipped,
                 cached=True,
                 service_preset=service_preset,
@@ -302,8 +325,100 @@ class TranslationEngine:
             dest_name=self.get_language_name(norm_dest),
             pronunciation=raw_res.pronunciation,
             confidence=None,
+            did_you_mean=raw_res.did_you_mean,
+            corrected_tokens=list(raw_res.corrected_tokens),
+            alternatives=list(raw_res.alternatives),
+            dictionary=[
+                DictionaryEntryDTO(part_of_speech=d.part_of_speech, terms=list(d.terms))
+                for d in raw_res.dictionary
+            ],
+            definitions=[
+                DefinitionEntryDTO(
+                    part_of_speech=df.part_of_speech,
+                    definition=df.definition,
+                    example=df.example,
+                )
+                for df in raw_res.definitions
+            ],
             skipped=is_skipped,
             cached=False,
+            service_preset=service_preset,
+            latency_ms=round((time.perf_counter() - started) * 1000.0, 2),
+        )
+
+    async def translate_multi_target(
+        self,
+        text: str,
+        src: str = "auto",
+        targets: Optional[List[str]] = None,
+        service_preset: str = DEFAULT_SERVICE_PRESET,
+    ) -> MultiTargetTranslateResponse:
+        """Translate a single travel phrase simultaneously into multiple target languages."""
+        started = time.perf_counter()
+        cleaned = text.strip()
+        norm_src = self.normalize_language_code(src, allow_auto=True)
+        unique_targets: List[str] = []
+        for t_code in targets or ["vi", "ja", "ko"]:
+            norm_t = self.normalize_language_code(t_code, allow_auto=False)
+            if norm_t not in unique_targets:
+                unique_targets.append(norm_t)
+
+        sem = asyncio.Semaphore(BULK_CONCURRENCY_LIMIT)
+        detected_src = norm_src if norm_src != "auto" else "en"
+        did_you_mean: Optional[str] = None
+        corrected_tokens: List[str] = []
+
+        async def _translate_one_target(dest_code: str) -> Tuple[MultiTargetItem, Optional[str], Optional[str], List[str]]:
+            async with sem:
+                try:
+                    tr = await self.translate(
+                        cleaned,
+                        src=norm_src,
+                        dest=dest_code,
+                        service_preset=service_preset,
+                    )
+                    return (
+                        MultiTargetItem(
+                            dest=tr.dest,
+                            dest_name=tr.dest_name,
+                            text=tr.text,
+                            pronunciation=tr.pronunciation,
+                            skipped=tr.skipped,
+                            cached=tr.cached,
+                        ),
+                        tr.src,
+                        tr.did_you_mean,
+                        tr.corrected_tokens,
+                    )
+                except Exception as exc:
+                    return (
+                        MultiTargetItem(
+                            dest=dest_code,
+                            dest_name=self.get_language_name(dest_code),
+                            error=str(exc),
+                        ),
+                        None,
+                        None,
+                        [],
+                    )
+
+        outcomes = await asyncio.gather(*[_translate_one_target(t) for t in unique_targets])
+        items: List[MultiTargetItem] = []
+        for item, s_code, dym, dym_toks in outcomes:
+            items.append(item)
+            if s_code and norm_src == "auto":
+                detected_src = s_code
+            if dym and did_you_mean is None:
+                did_you_mean = dym
+                corrected_tokens = dym_toks
+
+        return MultiTargetTranslateResponse(
+            origin=cleaned,
+            src=detected_src,
+            src_name=self.get_language_name(detected_src),
+            did_you_mean=did_you_mean,
+            corrected_tokens=corrected_tokens,
+            results=items,
             service_preset=service_preset,
             latency_ms=round((time.perf_counter() - started) * 1000.0, 2),
         )
@@ -579,6 +694,7 @@ class TranslationEngine:
 
         det = await self.detect(cleaned, service_preset=service_preset)
         if det.lang == norm_target:
+            dym, _ = fallback_typo_suggestion(cleaned)
             return TravelInquiryResponse(
                 original_text=cleaned,
                 detected_lang=det.lang,
@@ -588,6 +704,7 @@ class TranslationEngine:
                 target_language=target_name,
                 translated_text=cleaned,
                 pronunciation=None,
+                did_you_mean=dym,
                 needs_translation=False,
                 cached=det.cached,
                 service_preset=service_preset,
@@ -609,6 +726,7 @@ class TranslationEngine:
             target_language=target_name,
             translated_text=tr.text,
             pronunciation=tr.pronunciation,
+            did_you_mean=tr.did_you_mean,
             needs_translation=True,
             cached=det.cached and tr.cached,
             service_preset=service_preset,

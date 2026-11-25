@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Compass,
   Database,
   Languages,
   MessageSquareText,
   Moon,
-  Server,
+  Plane,
+  SlidersHorizontal,
   Star,
   Sun,
 } from 'lucide-react';
@@ -16,6 +17,7 @@ import type {
   ServicePresetKey,
   WorkspaceTab,
 } from '../types/translate';
+import { ModalDialog } from './ModalDialog';
 
 interface TopBarProps {
   activeTab: WorkspaceTab;
@@ -36,179 +38,275 @@ export const TopBar: React.FC<TopBarProps> = ({
 }) => {
   const { locale, setLocale, t } = useI18n();
   const { theme, toggleTheme } = useTheme();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const tabs: Array<{ id: WorkspaceTab; label: string; icon: React.ReactNode }> = [
     {
       id: 'translator',
       label: t('tabTranslator'),
-      icon: <Languages className="h-4 w-4" />,
+      icon: <Languages className="h-4 w-4" aria-hidden="true" />,
     },
     {
       id: 'destinations',
       label: t('tabDestinations'),
-      icon: <Compass className="h-4 w-4" />,
+      icon: <Compass className="h-4 w-4" aria-hidden="true" />,
     },
     {
       id: 'reviews',
       label: t('tabReviews'),
-      icon: <Star className="h-4 w-4" />,
+      icon: <Star className="h-4 w-4" aria-hidden="true" />,
     },
     {
       id: 'inquiries',
       label: t('tabInquiries'),
-      icon: <MessageSquareText className="h-4 w-4" />,
+      icon: <MessageSquareText className="h-4 w-4" aria-hidden="true" />,
+    },
+  ];
+
+  const presetOptions: Array<{ key: ServicePresetKey; label: string; desc: string }> = [
+    {
+      key: 'default',
+      label: t('presetDefault'),
+      desc: 'translate.google.com',
+    },
+    {
+      key: 'direct',
+      label: t('presetDirect'),
+      desc: 'translate.googleapis.com',
+    },
+    {
+      key: 'redundant',
+      label: t('presetRedundant'),
+      desc: 'translate.google.com · .co.kr · .co.jp',
     },
   ];
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]/95 backdrop-blur-md">
-      <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Brand */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--accent-primary)] text-white shadow-sm">
-              <Languages className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
-                  {t('appName')}
-                </h1>
-                <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-0.5 font-mono text-xs font-semibold text-[var(--accent-primary)]">
-                  googletrans {health?.googletrans_version ?? '4.0.2'}
-                </span>
+    <>
+      <header className="sticky top-0 z-30 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]/85 backdrop-blur-xl">
+        <div className="mx-auto max-w-7xl px-4 py-3.5 sm:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            {/* Travel Brand Emblem */}
+            <div className="flex items-center gap-3.5">
+              <div
+                aria-hidden="true"
+                className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 via-cyan-500 to-orange-500 text-white shadow-md"
+              >
+                <Plane className="h-6 w-6" />
               </div>
-              <p className="text-sm text-[var(--text-secondary)]">{t('appSubtitle')}</p>
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h1 className="font-heading text-xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-2xl">
+                    {t('appName')}
+                  </h1>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--status-good-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--status-good-text)]">
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        health ? 'bg-emerald-500' : 'bg-amber-500'
+                      }`}
+                    />
+                    {health ? t('backendConnected') : t('backendOffline')}
+                  </span>
+                </div>
+                <p className="text-sm text-[var(--text-secondary)]">{t('appSubtitle')}</p>
+              </div>
+            </div>
+
+            {/* Right Controls: Engine Dialog Trigger, EN/VI Pill, Bright/Dim Theme Pill */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                className="flex min-h-[44px] items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:border-[var(--accent-primary)] hover:bg-[var(--bg-surface-hover)]"
+              >
+                <SlidersHorizontal className="h-4 w-4 text-[var(--accent-primary)]" aria-hidden="true" />
+                <span>{t('engineSettingsBtn')}</span>
+                {health && (
+                  <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 font-mono text-xs font-bold text-[var(--accent-primary)]">
+                    {health.cache_hits}
+                  </span>
+                )}
+              </button>
+
+              {/* EN / VI Segmented Pill */}
+              <div
+                role="group"
+                aria-label="Interface Language"
+                className="flex min-h-[44px] items-center rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-1 text-sm font-bold"
+              >
+                <button
+                  type="button"
+                  onClick={() => setLocale('en')}
+                  aria-pressed={locale === 'en'}
+                  className={`rounded-full px-3.5 py-1.5 transition ${
+                    locale === 'en'
+                      ? 'bg-[var(--accent-primary)] text-white shadow-xs'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  EN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLocale('vi')}
+                  aria-pressed={locale === 'vi'}
+                  className={`rounded-full px-3.5 py-1.5 transition ${
+                    locale === 'vi'
+                      ? 'bg-[var(--accent-primary)] text-white shadow-xs'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  VI
+                </button>
+              </div>
+
+              {/* Bright / Dim Theme Toggle Pill */}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label="Toggle Bright or Dim Theme"
+                className="flex min-h-[44px] items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:border-[var(--accent-primary)] hover:bg-[var(--bg-surface-hover)]"
+              >
+                {theme === 'dark' ? (
+                  <>
+                    <Sun className="h-4 w-4 text-amber-400" aria-hidden="true" />
+                    <span>{t('themeLight')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="h-4 w-4 text-sky-600" aria-hidden="true" />
+                    <span>{t('themeDark')}</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
-          {/* Right Controls: Endpoint Preset, Health/Cache, EN/VI, Theme */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Tutorial Sec 5: Custom Service URLs Selector */}
-            <div className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3 py-2 text-sm">
-              <Server className="h-4 w-4 text-[var(--accent-primary)]" />
-              <span className="hidden font-medium text-[var(--text-secondary)] md:inline">
-                {t('servicePresetLabel')}:
-              </span>
-              <select
-                aria-label={t('servicePresetLabel')}
-                value={servicePreset}
-                onChange={(e) => onChangePreset(e.target.value as ServicePresetKey)}
-                className="bg-transparent font-semibold text-[var(--text-primary)] outline-none"
-              >
-                <option value="default">{t('presetDefault')}</option>
-                <option value="direct">{t('presetDirect')}</option>
-                <option value="redundant">{t('presetRedundant')}</option>
-              </select>
+          {/* Sculpted Pill-Track Workspace Switcher */}
+          <nav aria-label="Workspaces" className="mt-3.5 flex overflow-x-auto pb-0.5">
+            <div className="inline-flex min-w-full gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-1.5 sm:min-w-0">
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => onSelectTab(tab.id)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`flex min-h-[42px] shrink-0 flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition sm:flex-initial sm:px-5 ${
+                      isActive
+                        ? 'bg-[var(--accent-primary)] text-white shadow-sm'
+                        : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
+          </nav>
+        </div>
+      </header>
 
-            {/* Health & Cache Pill */}
-            <div className="flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3 py-2 text-sm">
-              <span
-                className={`inline-block h-2.5 w-2.5 rounded-full ${
-                  health ? 'bg-emerald-500' : 'bg-amber-500'
-                }`}
-              />
-              <span className="font-medium">
-                {health ? t('backendConnected') : t('backendOffline')}
-              </span>
-              {health && (
-                <>
-                  <span className="text-[var(--text-muted)]">·</span>
-                  <span className="flex items-center gap-1 text-[var(--text-secondary)]">
-                    <Database className="h-3.5 w-3.5" />
-                    {t('cacheHitsLabel')}: <strong>{health.cache_hits}</strong>
-                  </span>
-                  {health.cache_size > 0 && (
-                    <button
-                      type="button"
-                      onClick={onClearCache}
-                      className="ml-1 rounded bg-[var(--bg-surface)] px-2 py-0.5 text-xs font-medium text-[var(--accent-primary)] hover:underline"
-                    >
-                      {t('clearCacheBtn')}
-                    </button>
-                  )}
-                </>
-              )}
+      {/* Sculpted Engine & Endpoint Inspector Dialog */}
+      <ModalDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        title={t('engineDialogTitle')}
+        subtitle={t('engineDialogSubtitle')}
+        icon={<SlidersHorizontal className="h-5 w-5" />}
+        maxWidthClass="max-w-xl"
+      >
+        <div className="space-y-5">
+          {/* Live Stats Row */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="wl-well p-3.5 text-center">
+              <div className="text-xs font-semibold text-[var(--text-muted)]">py-googletrans</div>
+              <div className="mt-1 font-mono text-lg font-bold text-[var(--accent-primary)]">
+                v{health?.googletrans_version ?? '4.0.2'}
+              </div>
             </div>
-
-            {/* EN / VI Toggle */}
-            <div
-              role="group"
-              aria-label="Interface Language"
-              className="flex rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-0.5 text-sm font-semibold"
-            >
-              <button
-                type="button"
-                onClick={() => setLocale('en')}
-                className={`rounded-lg px-3 py-1.5 transition ${
-                  locale === 'en'
-                    ? 'bg-[var(--accent-primary)] text-white'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                onClick={() => setLocale('vi')}
-                className={`rounded-lg px-3 py-1.5 transition ${
-                  locale === 'vi'
-                    ? 'bg-[var(--accent-primary)] text-white'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                VI
-              </button>
+            <div className="wl-well p-3.5 text-center">
+              <div className="text-xs font-semibold text-[var(--text-muted)]">
+                {t('cacheHitsLabel')}
+              </div>
+              <div className="mt-1 font-mono text-lg font-bold text-[var(--text-primary)]">
+                {health?.cache_hits ?? 0}
+              </div>
             </div>
+            <div className="wl-well p-3.5 text-center">
+              <div className="text-xs font-semibold text-[var(--text-muted)]">
+                {t('cacheEntriesLabel')}
+              </div>
+              <div className="mt-1 font-mono text-lg font-bold text-[var(--text-primary)]">
+                {health?.cache_size ?? 0} / {health?.cache_max_entries ?? 500}
+              </div>
+            </div>
+          </div>
 
-            {/* Light / Dark Mode Toggle */}
+          {/* Endpoint Routing Radio Cards */}
+          <div>
+            <div className="mb-2.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+              {t('servicePresetLabel')}
+            </div>
+            <div className="space-y-2.5">
+              {presetOptions.map((opt) => {
+                const selected = servicePreset === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => onChangePreset(opt.key)}
+                    aria-pressed={selected}
+                    className={`flex w-full items-center justify-between rounded-2xl border p-4 text-left transition ${
+                      selected
+                        ? 'border-[var(--accent-primary)] bg-[var(--accent-soft)]'
+                        : 'border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] hover:border-[var(--accent-primary)]'
+                    }`}
+                  >
+                    <div>
+                      <div className="text-base font-bold text-[var(--text-primary)]">
+                        {opt.label}
+                      </div>
+                      <div className="font-mono text-xs text-[var(--text-secondary)]">
+                        {opt.desc}
+                      </div>
+                    </div>
+                    <span
+                      className={`h-4 w-4 rounded-full border-2 ${
+                        selected
+                          ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]'
+                          : 'border-[var(--text-muted)]'
+                      }`}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border-subtle)] pt-4">
             <button
               type="button"
-              onClick={toggleTheme}
-              aria-label="Toggle Light/Dark Theme"
-              className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] transition hover:border-[var(--accent-primary)]"
+              disabled={!health || health.cache_size === 0}
+              onClick={onClearCache}
+              className="flex min-h-[44px] items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:border-[var(--accent-primary)] disabled:opacity-45"
             >
-              {theme === 'dark' ? (
-                <>
-                  <Sun className="h-4 w-4 text-amber-400" />
-                  <span className="hidden sm:inline">{t('themeLight')}</span>
-                </>
-              ) : (
-                <>
-                  <Moon className="h-4 w-4 text-sky-600" />
-                  <span className="hidden sm:inline">{t('themeDark')}</span>
-                </>
-              )}
+              <Database className="h-4 w-4 text-[var(--accent-primary)]" aria-hidden="true" />
+              <span>{t('clearCacheBtn')}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(false)}
+              className="min-h-[44px] rounded-full bg-[var(--accent-primary)] px-6 py-2 text-sm font-bold text-white transition hover:bg-[var(--accent-primary-hover)]"
+            >
+              {t('closeDialogBtn')}
             </button>
           </div>
         </div>
-
-        {/* 4 Workspace Navigation Tabs */}
-        <nav
-          aria-label="Workspaces"
-          className="mt-3 flex gap-2 overflow-x-auto pb-1"
-        >
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => onSelectTab(tab.id)}
-                className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition sm:text-base ${
-                  isActive
-                    ? 'bg-[var(--accent-primary)] text-white shadow-xs'
-                    : 'bg-[var(--bg-surface-muted)] text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                {tab.icon}
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-    </header>
+      </ModalDialog>
+    </>
   );
 };

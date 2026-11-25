@@ -49,7 +49,7 @@ powershell -ExecutionPolicy Bypass -File "F:\Git\nqhieu-gd-local\CS252---Persona
 
 ## 3. Running Automated Tests
 
-- **Backend Unit & API Contract Tests (`16 passed`):**
+- **Backend Unit & API Contract Tests (`18 passed`):**
   ```powershell
   cd "F:\Git\nqhieu-gd-local\CS252---Personal-Repository\W7\WanderLingo\backend"
   $env:PYTHONPATH="."
@@ -76,10 +76,9 @@ powershell -ExecutionPolicy Bypass -File "F:\Git\nqhieu-gd-local\CS252---Persona
 1. **Startup & Architecture Proof (0:00–0:30):**
    - Run `start.ps1` and open `http://127.0.0.1:8000` and `http://127.0.0.1:8000/docs`.
    - Point out the top bar showing **`googletrans 4.0.2`**, **API Online**, **Cache Hits**, the **Endpoint Preset** selector (`Default`, `Direct API`, `Failover`), **EN / VI** toggle, and **Light / Dark** theme toggle.
-2. **Tab 1 — Live Translator & Phrasebook (0:30–1:15):**
-   - Translate `"Hello, how are you?"` into Vietnamese (`"Xin chào bạn khoẻ không?"`) and Japanese (`"どうもありがとうございます。"` with phonetic pronunciation `"Dōmo arigatōgozaimasu."`).
-   - Click **"Detect Language Only"** on `"¿Dónde está el hotel?"` to show `Spanish (es)` with `100%` confidence.
-   - Click a phrasebook chip and show local translation history updating below.
+2. **Tab 1 — Travel Translator & High-Tier Features (0:30–1:25):**
+   - Translate `"Hpw do I reverve a room?"` into Vietnamese to demonstrate the **Spelling & Grammar Fixing Recommendation (`"Did you mean: How do I reserve a room?"`)**, then click **Apply & Translate**.
+   - Show **Alternative Natural Phrasings**, **Verify Meaning (Back-Translate)**, **Show Card** (the high-contrast Show-to-Local Conversation Card dialog), **Multi-Language Broadcast** (translating into 5 languages simultaneously), and **Save Phrase** / **Export Phrase Sheet (`.txt`)**.
 3. **Tab 2 — Destination Guides (1:15–2:00):**
    - Show the **8 curated Vietnam destinations** (*Hanoi, Ho Chi Minh City, Da Nang & Hoi An, Hue, Da Lat, Phu Quoc, Vung Tau, Quy Nhon*).
    - Select **Hanoi (Vietnam Capital)** or **Hue / Da Lat / Phu Quoc** and translate into **Vietnamese** or **Japanese**.

@@ -7,6 +7,7 @@ import type {
   HotelReviewItem,
   HotelReviewTranslateResponse,
   LanguagesResponse,
+  MultiTargetTranslateResponse,
   ServicePresetKey,
   TranslateResponse,
   TravelInquiryReplyResponse,
@@ -122,6 +123,29 @@ export const apiClient = {
           text: params.text,
           src: params.src,
           dest: params.dest,
+          service_preset: params.servicePreset ?? 'default',
+        }),
+      },
+      signal,
+    ),
+
+  translateMultiTarget: (
+    params: {
+      text: string;
+      src?: string;
+      targets: string[];
+      servicePreset?: ServicePresetKey;
+    },
+    signal?: AbortSignal,
+  ) =>
+    requestJson<MultiTargetTranslateResponse>(
+      API_ROUTES.TRANSLATE_MULTI,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          text: params.text,
+          src: params.src ?? 'auto',
+          targets: params.targets,
           service_preset: params.servicePreset ?? 'default',
         }),
       },
