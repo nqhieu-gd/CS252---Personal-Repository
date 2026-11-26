@@ -74,20 +74,17 @@ powershell -ExecutionPolicy Bypass -File "F:\Git\nqhieu-gd-local\CS252---Persona
 ## 4. Video Demonstration Walkthrough Script (3–4 Minutes)
 
 1. **Startup & Architecture Proof (0:00–0:30):**
-   - Run `start.ps1` and open `http://127.0.0.1:8000` and `http://127.0.0.1:8000/docs`.
-   - Point out the top bar showing **`googletrans 4.0.2`**, **API Online**, **Cache Hits**, the **Endpoint Preset** selector (`Default`, `Direct API`, `Failover`), **EN / VI** toggle, and **Light / Dark** theme toggle.
-2. **Tab 1 — Travel Translator & High-Tier Features (0:30–1:25):**
-   - Translate `"Hpw do I reverve a room?"` into Vietnamese to demonstrate the **Spelling & Grammar Fixing Recommendation (`"Did you mean: How do I reserve a room?"`)**, then click **Apply & Translate**.
-   - Show **Alternative Natural Phrasings**, **Verify Meaning (Back-Translate)**, **Show Card** (the high-contrast Show-to-Local Conversation Card dialog), **Multi-Language Broadcast** (translating into 5 languages simultaneously), and **Save Phrase** / **Export Phrase Sheet (`.txt`)**.
-3. **Tab 2 — Destination Guides (1:15–2:00):**
-   - Show the **8 curated Vietnam destinations** (*Hanoi, Ho Chi Minh City, Da Nang & Hoi An, Hue, Da Lat, Phu Quoc, Vung Tau, Quy Nhon*).
-   - Select **Hanoi (Vietnam Capital)** or **Hue / Da Lat / Phu Quoc** and translate into **Vietnamese** or **Japanese**.
-   - Highlight how all 6 string fields are tagged **`Translated String`** while numeric fields (`Estimated Daily Budget (USD): 45`, `Recommended Stay Days: 3`) are tagged **`Preserved Non-String`**.
-   - Briefly toggle **Custom Destination Fields (JSON)** to show custom dictionary support.
-4. **Tab 3 — Hotel Reviews Bulk Translator / Tutorial Example 1 (2:00–2:45):**
-   - Click **"Translate All Reviews (8)"** with Target Language = **English**.
-   - Point out the 3 tutorial Vietnamese reviews translated to English, the English review marked **`Skipped — Already in Target Language`**, and the **Detected Language Breakdown** bar (`Vietnamese: 3`, `English: 1`, `Japanese: 1`, `French: 1`, `Spanish: 1`, `Korean: 1`).
-5. **Tab 4 — Travel Inquiry Desk / Tutorial Example 2 (2:45–3:30):**
-   - Click **"Process All Queued Inquiries (6)"**.
-   - Show how Vietnamese, Spanish, and Japanese inquiries display **`Translation Applied`** (`needs_translation: true`), while the English inquiry displays **`No Translation Needed (Same Language)`** (`needs_translation: false`).
-   - In the **Two-Way Concierge Reply Composer** on the Japanese inquiry, click **"Translate Reply to Guest Language"** to show the staff reply reverse-translated into Japanese with Romaji pronunciation.
+   - Run `start.ps1` and let it automatically open `http://127.0.0.1:8000` (and optionally show `http://127.0.0.1:8000/docs`).
+   - Point out the top bar showing **Engine Ready**, the **Engine** settings modal (`py-googletrans v4.0.2`, Cache Hits, Endpoint Routing Preset selector: `Standard`, `Direct API`, `Multi-Region Failover`), **EN / VI** toggle, and **Light Theme / Dark Theme** toggle.
+2. **Tab 1 — Translator & Common English Travel Phrasebook (0:30–1:25):**
+   - Translate `"Hpw do I reverve a room?"` into Vietnamese (`From = Auto-Detect`) to show automatic source-language reporting (`Translated from: English`) and the **Spelling & Grammar Fixing Recommendation (`"Did you mean: How do I reserve a room?"`)**, then click **Apply & Translate**.
+   - Show **Verify Meaning**, **Show Card** (the high-contrast Show-to-Local Conversation Card dialog), **Common English Travel Phrasebook** (clicking a `...` fill-in template automatically selects `...` for quick customization), and **Saved Phrases** (single-item delete + **Export Phrase Sheet (`.txt`)**).
+3. **Tab 2 — Destinations / Popular Destinations (1:25–2:05):**
+   - Browse the **8 curated Vietnam destinations** (*Hanoi, Ho Chi Minh City, Da Nang & Hoi An, Hue, Da Lat, Phu Quoc, Vung Tau, Quy Nhon*).
+   - Switch **Language** from **English** to **Vietnamese** or **Japanese**: show how all descriptive fields inside **About this place** automatically translate and replace in-place while numeric planning fields (`Estimated Daily Budget (USD)`, `Recommended Stay Days`) remain preserved.
+4. **Tab 3 — Guest Reviews / Tutorial Example 1 (2:05–2:45):**
+   - Click **Translate All Reviews** (or choose a **Language**) to localize the entire international guest review wall at once, skipping reviews already written in your language (`Already in Target Language`).
+   - Post a custom review with your own **Name**, **Hotel / Place**, and **Star Rating** (`Ctrl + Enter` adds to the board; only your own posted reviews can be deleted).
+5. **Tab 4 — Concierge Desk / Tutorial Example 2 (2:45–3:30):**
+   - Select any guest thread in the **Split-Pane 2-Way Messaging Inbox** (`Alex Carter` vs. `Yuki Tanaka`) to see on-demand single-thread translation (`Same Language` vs. `Translated`).
+   - Click **Fill Template** (or type a reply) at the bottom of `Yuki Tanaka`'s thread and press **Send Translated Reply** to append a reverse-translated Japanese reply bubble (with Romaji pronunciation and audio playback) right into the chat stream.

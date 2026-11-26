@@ -239,15 +239,22 @@ def test_extract_did_you_mean_alternatives_and_dictionary() -> None:
 
 
 @pytest.mark.asyncio
-async def test_multi_target_translation_and_typo_suggestion(
+async def test_bulk_translation_and_typo_suggestion(
     engine: TranslationEngine,
 ) -> None:
-    multi = await engine.translate_multi_target(
+    single = await engine.translate(
         "Hpw do I reverve a room?",
         src="auto",
-        targets=["vi", "ja", "ko"],
+        dest="vi",
     )
-    assert multi.did_you_mean == "How do I reserve a room?"
-    assert multi.corrected_tokens == ["How", "reserve"]
-    assert len(multi.results) == 3
-    assert [r.dest for r in multi.results] == ["vi", "ja", "ko"]
+    assert single.did_you_mean == "How do I reserve a room?"
+    assert single.corrected_tokens == ["How", "reserve"]
+
+    bulk = await engine.translate_bulk(
+        ["Hello, how are you?", "I want to book a hotel in Hanoi"],
+        src="auto",
+        dest="en",
+        skip_same_language=True,
+    )
+    assert bulk.summary.total == 2
+    assert bulk.summary.skipped_count == 2

@@ -34,12 +34,18 @@ def test_detect_and_translate_endpoints(client: TestClient) -> None:
     assert tr.status_code == 200
     assert tr.json()["did_you_mean"] == "How do I reserve a room?"
 
-    multi = client.post(
-        "/api/translate/multi",
-        json={"text": "Hello, how are you?", "src": "en", "targets": ["vi", "ja"]},
+    bulk = client.post(
+        "/api/translate/bulk",
+        json={
+            "texts": ["Hello, how are you?", "Khách sạn này rất tuyệt vời! Nhân viên thân thiện."],
+            "src": "auto",
+            "dest": "en",
+            "skip_same_language": True,
+        },
     )
-    assert multi.status_code == 200
-    assert len(multi.json()["results"]) == 2
+    assert bulk.status_code == 200
+    assert bulk.json()["summary"]["total"] == 2
+    assert bulk.json()["summary"]["skipped_count"] == 1
 
 
 def test_invalid_language_returns_422(client: TestClient) -> None:
@@ -55,9 +61,18 @@ def test_bulk_and_travel_endpoints(client: TestClient) -> None:
     samples = client.get("/api/travel/samples")
     assert samples.status_code == 200
     sdata = samples.json()
-    assert len(sdata["destinations"]) >= 5
+    assert len(sdata["destinations"]) >= 8
     assert len(sdata["reviews"]) >= 3
     assert len(sdata["inquiries"]) >= 4
+    phrasebook_by_cat = {c["category"]: c["phrases"] for c in sdata["phrasebook"]}
+    assert len(phrasebook_by_cat["hotel"]) >= 6
+    assert len(phrasebook_by_cat["transport"]) >= 6
+    assert len(phrasebook_by_cat["dining"]) >= 6
+    assert len(phrasebook_by_cat["emergency"]) >= 8
+    all_phrases = [p for c in sdata["phrasebook"] for p in c["phrases"]]
+    assert "¿Dónde está el hotel?" not in all_phrases
+    assert "Welcome to our hotel" not in all_phrases
+    assert "Thank you for staying with us" not in all_phrases
 
     rev_res = client.post(
         "/api/travel/reviews",

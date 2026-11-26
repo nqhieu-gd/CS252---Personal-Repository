@@ -35,8 +35,6 @@ from app.schemas import (
     HotelReviewTranslateResponse,
     LanguageItem,
     LanguagesResponse,
-    MultiTargetItem,
-    MultiTargetTranslateResponse,
     ServicePresetInfo,
     TranslateResponse,
     TravelInquiryReplyResponse,
@@ -81,6 +79,11 @@ class TranslationEngine:
         self._name_to_code: Dict[str, str] = {
             v.lower(): k.lower() for k, v in self._raw_languages.items()
         }
+
+    async def aclose(self) -> None:
+        close_fn = getattr(self.adapter, "aclose", None)
+        if callable(close_fn):
+            await close_fn()
 
     def normalize_language_code(self, code: str, allow_auto: bool = False) -> str:
         if not isinstance(code, str) or not code.strip():
@@ -193,6 +196,12 @@ class TranslationEngine:
                     if delay > 0:
                         await asyncio.sleep(delay)
 
+        err_detail = str(last_exc)
+        if '"302"' in err_detail or '"429"' in err_detail:
+            raise UpstreamTranslationError(
+                "Google Translate's free public endpoint temporarily rate-limited burst requests "
+                f"from this IP ({err_detail}). Please wait a few minutes before sending new uncached translations."
+            ) from last_exc
         raise UpstreamTranslationError(
             f"Translation service failed after {total_attempts} attempt(s): {last_exc}"
         ) from last_exc
@@ -313,7 +322,12 @@ class TranslationEngine:
             lambda urls: self.adapter.translate_text(cleaned, norm_src, norm_dest, urls),
         )
         actual_src = self._safe_normalize_detected_code(raw_res.src)
-        self.cache.set(cache_key, (raw_res, None))
+        self.cache.set(cache_key, (raw_res, raw_res.confidence))
+        if norm_src == "auto":
+            self.cache.set(
+                ("detect", cleaned),
+                RawDetectedResult(lang=actual_src, confidence=raw_res.confidence),
+            )
         is_skipped = actual_src == norm_dest and raw_res.text.strip() == cleaned
 
         return TranslateResponse(
@@ -324,7 +338,7 @@ class TranslationEngine:
             dest=norm_dest,
             dest_name=self.get_language_name(norm_dest),
             pronunciation=raw_res.pronunciation,
-            confidence=None,
+            confidence=raw_res.confidence,
             did_you_mean=raw_res.did_you_mean,
             corrected_tokens=list(raw_res.corrected_tokens),
             alternatives=list(raw_res.alternatives),
@@ -342,83 +356,6 @@ class TranslationEngine:
             ],
             skipped=is_skipped,
             cached=False,
-            service_preset=service_preset,
-            latency_ms=round((time.perf_counter() - started) * 1000.0, 2),
-        )
-
-    async def translate_multi_target(
-        self,
-        text: str,
-        src: str = "auto",
-        targets: Optional[List[str]] = None,
-        service_preset: str = DEFAULT_SERVICE_PRESET,
-    ) -> MultiTargetTranslateResponse:
-        """Translate a single travel phrase simultaneously into multiple target languages."""
-        started = time.perf_counter()
-        cleaned = text.strip()
-        norm_src = self.normalize_language_code(src, allow_auto=True)
-        unique_targets: List[str] = []
-        for t_code in targets or ["vi", "ja", "ko"]:
-            norm_t = self.normalize_language_code(t_code, allow_auto=False)
-            if norm_t not in unique_targets:
-                unique_targets.append(norm_t)
-
-        sem = asyncio.Semaphore(BULK_CONCURRENCY_LIMIT)
-        detected_src = norm_src if norm_src != "auto" else "en"
-        did_you_mean: Optional[str] = None
-        corrected_tokens: List[str] = []
-
-        async def _translate_one_target(dest_code: str) -> Tuple[MultiTargetItem, Optional[str], Optional[str], List[str]]:
-            async with sem:
-                try:
-                    tr = await self.translate(
-                        cleaned,
-                        src=norm_src,
-                        dest=dest_code,
-                        service_preset=service_preset,
-                    )
-                    return (
-                        MultiTargetItem(
-                            dest=tr.dest,
-                            dest_name=tr.dest_name,
-                            text=tr.text,
-                            pronunciation=tr.pronunciation,
-                            skipped=tr.skipped,
-                            cached=tr.cached,
-                        ),
-                        tr.src,
-                        tr.did_you_mean,
-                        tr.corrected_tokens,
-                    )
-                except Exception as exc:
-                    return (
-                        MultiTargetItem(
-                            dest=dest_code,
-                            dest_name=self.get_language_name(dest_code),
-                            error=str(exc),
-                        ),
-                        None,
-                        None,
-                        [],
-                    )
-
-        outcomes = await asyncio.gather(*[_translate_one_target(t) for t in unique_targets])
-        items: List[MultiTargetItem] = []
-        for item, s_code, dym, dym_toks in outcomes:
-            items.append(item)
-            if s_code and norm_src == "auto":
-                detected_src = s_code
-            if dym and did_you_mean is None:
-                did_you_mean = dym
-                corrected_tokens = dym_toks
-
-        return MultiTargetTranslateResponse(
-            origin=cleaned,
-            src=detected_src,
-            src_name=self.get_language_name(detected_src),
-            did_you_mean=did_you_mean,
-            corrected_tokens=corrected_tokens,
-            results=items,
             service_preset=service_preset,
             latency_ms=round((time.perf_counter() - started) * 1000.0, 2),
         )
@@ -441,49 +378,45 @@ class TranslationEngine:
             cleaned = raw_text.strip()
             async with sem:
                 try:
-                    detected_conf: Optional[float] = None
-                    effective_src = norm_src
-                    was_cached = False
-
                     if skip_same_language and norm_src == "auto":
-                        det = await self.detect(cleaned, service_preset=service_preset)
-                        effective_src = det.lang
-                        detected_conf = det.confidence
-                        was_cached = det.cached
-                        if det.lang == norm_dest:
-                            return BulkItemResult(
-                                index=idx,
-                                origin=cleaned,
-                                translated=cleaned,
-                                src=det.lang,
-                                src_name=det.lang_name,
-                                dest=norm_dest,
-                                dest_name=dest_name,
-                                pronunciation=None,
-                                confidence=detected_conf,
-                                skipped=True,
-                                cached=was_cached,
-                                error=None,
-                            )
+                        cached_det: Optional[RawDetectedResult] = self.cache.get(("detect", cleaned))
+                        if cached_det is not None:
+                            det_code = self._safe_normalize_detected_code(cached_det.lang)
+                            if det_code == norm_dest:
+                                return BulkItemResult(
+                                    index=idx,
+                                    origin=cleaned,
+                                    translated=cleaned,
+                                    src=det_code,
+                                    src_name=self.get_language_name(det_code),
+                                    dest=norm_dest,
+                                    dest_name=dest_name,
+                                    pronunciation=None,
+                                    confidence=cached_det.confidence,
+                                    skipped=True,
+                                    cached=True,
+                                    error=None,
+                                )
 
                     tr = await self.translate(
                         cleaned,
-                        src=effective_src,
+                        src=norm_src,
                         dest=norm_dest,
                         service_preset=service_preset,
                     )
+                    is_same = skip_same_language and tr.src == norm_dest
                     return BulkItemResult(
                         index=idx,
                         origin=cleaned,
-                        translated=tr.text,
+                        translated=cleaned if is_same else tr.text,
                         src=tr.src,
                         src_name=tr.src_name,
                         dest=norm_dest,
                         dest_name=dest_name,
-                        pronunciation=tr.pronunciation,
-                        confidence=detected_conf if detected_conf is not None else tr.confidence,
-                        skipped=tr.skipped,
-                        cached=tr.cached or was_cached,
+                        pronunciation=None if is_same else tr.pronunciation,
+                        confidence=tr.confidence,
+                        skipped=is_same or tr.skipped,
+                        cached=tr.cached,
                         error=None,
                     )
                 except Exception as exc:
@@ -568,44 +501,51 @@ class TranslationEngine:
 
             async with sem:
                 try:
-                    det = await self.detect(cleaned_text, service_preset=service_preset)
-                    if det.lang == norm_target:
-                        res = HotelReviewResult(
-                            id=rev_id,
-                            author=author,
-                            hotel_name=rev.hotel_name,
-                            rating=rev.rating,
-                            stay_date=rev.stay_date,
-                            original=cleaned_text,
-                            translated=cleaned_text,
-                            source_lang=det.lang,
-                            source_lang_name=det.lang_name,
-                            confidence=det.confidence,
-                            pronunciation=None,
-                            skipped=True,
-                            cached=det.cached,
-                            error=None,
-                        )
-                        stat = BulkItemResult(
-                            index=idx,
-                            origin=cleaned_text,
-                            translated=cleaned_text,
-                            src=det.lang,
-                            src_name=det.lang_name,
-                            dest=norm_target,
-                            dest_name=target_name,
-                            confidence=det.confidence,
-                            skipped=True,
-                            cached=det.cached,
-                        )
-                        return res, stat
+                    cached_det: Optional[RawDetectedResult] = self.cache.get(("detect", cleaned_text))
+                    if cached_det is not None:
+                        det_code = self._safe_normalize_detected_code(cached_det.lang)
+                        if det_code == norm_target:
+                            det_name = self.get_language_name(det_code)
+                            res = HotelReviewResult(
+                                id=rev_id,
+                                author=author,
+                                hotel_name=rev.hotel_name,
+                                rating=rev.rating,
+                                stay_date=rev.stay_date,
+                                original=cleaned_text,
+                                translated=cleaned_text,
+                                source_lang=det_code,
+                                source_lang_name=det_name,
+                                confidence=cached_det.confidence,
+                                pronunciation=None,
+                                skipped=True,
+                                cached=True,
+                                error=None,
+                            )
+                            stat = BulkItemResult(
+                                index=idx,
+                                origin=cleaned_text,
+                                translated=cleaned_text,
+                                src=det_code,
+                                src_name=det_name,
+                                dest=norm_target,
+                                dest_name=target_name,
+                                confidence=cached_det.confidence,
+                                skipped=True,
+                                cached=True,
+                            )
+                            return res, stat
 
+                    # Single upstream call returns both detected src + confidence + translation
                     tr = await self.translate(
                         cleaned_text,
-                        src=det.lang,
+                        src="auto",
                         dest=norm_target,
                         service_preset=service_preset,
                     )
+                    is_same = tr.src == norm_target
+                    final_text = cleaned_text if is_same else tr.text
+                    final_pron = None if is_same else tr.pronunciation
                     res = HotelReviewResult(
                         id=rev_id,
                         author=author,
@@ -613,27 +553,27 @@ class TranslationEngine:
                         rating=rev.rating,
                         stay_date=rev.stay_date,
                         original=cleaned_text,
-                        translated=tr.text,
-                        source_lang=det.lang,
-                        source_lang_name=det.lang_name,
-                        confidence=det.confidence,
-                        pronunciation=tr.pronunciation,
-                        skipped=False,
-                        cached=tr.cached and det.cached,
+                        translated=final_text,
+                        source_lang=tr.src,
+                        source_lang_name=tr.src_name,
+                        confidence=tr.confidence,
+                        pronunciation=final_pron,
+                        skipped=is_same,
+                        cached=tr.cached,
                         error=None,
                     )
                     stat = BulkItemResult(
                         index=idx,
                         origin=cleaned_text,
-                        translated=tr.text,
-                        src=det.lang,
-                        src_name=det.lang_name,
+                        translated=final_text,
+                        src=tr.src,
+                        src_name=tr.src_name,
                         dest=norm_target,
                         dest_name=target_name,
-                        pronunciation=tr.pronunciation,
-                        confidence=det.confidence,
-                        skipped=False,
-                        cached=tr.cached and det.cached,
+                        pronunciation=final_pron,
+                        confidence=tr.confidence,
+                        skipped=is_same,
+                        cached=tr.cached,
                     )
                     return res, stat
                 except Exception as exc:
@@ -692,43 +632,64 @@ class TranslationEngine:
         norm_target = self.normalize_language_code(target_language, allow_auto=False)
         target_name = self.get_language_name(norm_target)
 
-        det = await self.detect(cleaned, service_preset=service_preset)
-        if det.lang == norm_target:
+        cached_det: Optional[RawDetectedResult] = self.cache.get(("detect", cleaned))
+        if cached_det is not None:
+            det_code = self._safe_normalize_detected_code(cached_det.lang)
+            if det_code == norm_target:
+                dym, _ = fallback_typo_suggestion(cleaned)
+                return TravelInquiryResponse(
+                    original_text=cleaned,
+                    detected_lang=det_code,
+                    detected_language=self.get_language_name(det_code),
+                    confidence=cached_det.confidence,
+                    target_lang=norm_target,
+                    target_language=target_name,
+                    translated_text=cleaned,
+                    pronunciation=None,
+                    did_you_mean=dym,
+                    needs_translation=False,
+                    cached=True,
+                    service_preset=service_preset,
+                    latency_ms=round((time.perf_counter() - started) * 1000.0, 2),
+                )
+
+        # Single upstream call obtains detected language, confidence, and translation together
+        tr = await self.translate(
+            cleaned,
+            src="auto",
+            dest=norm_target,
+            service_preset=service_preset,
+        )
+        if tr.src == norm_target:
             dym, _ = fallback_typo_suggestion(cleaned)
             return TravelInquiryResponse(
                 original_text=cleaned,
-                detected_lang=det.lang,
-                detected_language=det.lang_name,
-                confidence=det.confidence,
+                detected_lang=tr.src,
+                detected_language=tr.src_name,
+                confidence=tr.confidence,
                 target_lang=norm_target,
                 target_language=target_name,
                 translated_text=cleaned,
                 pronunciation=None,
-                did_you_mean=dym,
+                did_you_mean=tr.did_you_mean or dym,
                 needs_translation=False,
-                cached=det.cached,
+                cached=tr.cached,
                 service_preset=service_preset,
                 latency_ms=round((time.perf_counter() - started) * 1000.0, 2),
             )
 
-        tr = await self.translate(
-            cleaned,
-            src=det.lang,
-            dest=norm_target,
-            service_preset=service_preset,
-        )
         return TravelInquiryResponse(
             original_text=cleaned,
-            detected_lang=det.lang,
-            detected_language=det.lang_name,
-            confidence=det.confidence,
+            detected_lang=tr.src,
+            detected_language=tr.src_name,
+            confidence=tr.confidence,
             target_lang=norm_target,
             target_language=target_name,
             translated_text=tr.text,
             pronunciation=tr.pronunciation,
             did_you_mean=tr.did_you_mean,
             needs_translation=True,
-            cached=det.cached and tr.cached,
+            cached=tr.cached,
             service_preset=service_preset,
             latency_ms=round((time.perf_counter() - started) * 1000.0, 2),
         )

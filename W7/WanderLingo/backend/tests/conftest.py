@@ -100,13 +100,20 @@ class FakeGoogleTransAdapter:
             raise RuntimeError(f"Simulated upstream failure on text: {text}")
 
         detected_src = src
+        detected_conf: Optional[float] = 1.0
         if src == "auto":
-            detected_src, _ = self._known_detections.get(text, ("en", 0.95))
+            detected_src, detected_conf = self._known_detections.get(text, ("en", 0.95))
 
-        translated, pron = self._known_translations.get(
-            (text, dest),
-            (f"[{dest}] {text}", f"pron({dest}): {text}" if dest in ("ja", "ko", "zh-cn") else None),
-        )
+        if detected_src == dest:
+            translated, pron = text, None
+        else:
+            translated, pron = self._known_translations.get(
+                (text, dest),
+                (
+                    f"[{dest}] {text}",
+                    f"pron({dest}): {text}" if dest in ("ja", "ko", "zh-cn") else None,
+                ),
+            )
         dym, dym_tokens = fallback_typo_suggestion(text)
         alts = ["Làm cách nào để đặt phòng?"] if "reverve" in text.lower() and dest == "vi" else []
         dict_entries = (
@@ -131,6 +138,7 @@ class FakeGoogleTransAdapter:
             src=detected_src,
             dest=dest,
             pronunciation=pron,
+            confidence=detected_conf,
             did_you_mean=dym,
             corrected_tokens=dym_tokens,
             alternatives=alts,

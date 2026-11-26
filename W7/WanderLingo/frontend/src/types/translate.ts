@@ -76,27 +76,6 @@ export interface TranslateResponse {
   latency_ms: number;
 }
 
-export interface MultiTargetItem {
-  dest: string;
-  dest_name: string;
-  text: string | null;
-  pronunciation: string | null;
-  skipped: boolean;
-  cached: boolean;
-  error: string | null;
-}
-
-export interface MultiTargetTranslateResponse {
-  origin: string;
-  src: string;
-  src_name: string;
-  did_you_mean: string | null;
-  corrected_tokens: string[];
-  results: MultiTargetItem[];
-  service_preset: ServicePresetKey;
-  latency_ms: number;
-}
-
 export interface BulkItemResult {
   index: number;
   origin: string;
@@ -142,6 +121,7 @@ export interface HotelReviewItem {
   rating?: number;
   stay_date?: string;
   text: string;
+  isUserAdded?: boolean;
 }
 
 export interface HotelReviewResult {
@@ -174,6 +154,7 @@ export interface SampleTravelInquiry {
   guest_name: string;
   channel: string;
   badge: string;
+  source_lang?: string;
   inquiry_text: string;
   suggested_reply_en: string;
 }

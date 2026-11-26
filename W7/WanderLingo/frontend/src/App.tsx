@@ -48,6 +48,7 @@ export const App: React.FC = () => {
     favorites,
     isFavorite,
     toggleFavorite,
+    removeFavorite,
     clearFavorites,
   } = useTranslationHistory();
 
@@ -118,6 +119,7 @@ export const App: React.FC = () => {
             favorites={favorites}
             isFavorite={isFavorite}
             onToggleFavorite={toggleFavorite}
+            onRemoveFavorite={removeFavorite}
             onClearFavorites={clearFavorites}
             onAddHistory={addHistoryEntry}
             onClearHistory={clearHistory}

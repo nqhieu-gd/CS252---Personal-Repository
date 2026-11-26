@@ -89,6 +89,18 @@ export function useTranslationHistory() {
     [],
   );
 
+  const removeFavorite = useCallback((id: string) => {
+    setFavorites((prev) => {
+      const updated = prev.filter((item) => item.id !== id);
+      try {
+        localStorage.setItem(FAVORITES_KEY, JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+  }, []);
+
   const clearFavorites = useCallback(() => {
     setFavorites([]);
     try {
@@ -105,6 +117,7 @@ export function useTranslationHistory() {
     favorites,
     isFavorite,
     toggleFavorite,
+    removeFavorite,
     clearFavorites,
   };
 }

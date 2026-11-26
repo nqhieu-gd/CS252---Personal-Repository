@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Code2, Compass, Download, MapPin, Sparkles, Tag } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Calendar, Compass, Lightbulb, Loader2, MapPin, Utensils, Wallet } from 'lucide-react';
 import { useI18n } from '../i18n/I18nContext';
 import { apiClient, ApiClientError } from '../services/apiClient';
 import type {
@@ -19,20 +19,6 @@ interface DestinationGuidePanelProps {
   onOperationComplete: () => void;
 }
 
-const DEFAULT_CUSTOM_JSON = JSON.stringify(
-  {
-    name: 'Hoi An Ancient Town',
-    description: 'A UNESCO World Heritage river port famous for yellow merchant houses and silk lanterns.',
-    attractions: 'Japanese Covered Bridge, Thu Bon River Night Market, An Bang Beach',
-    food_specialties: 'Cao Lau Noodles, White Rose Dumplings, Banh Mi Phuong',
-    best_time_to_visit: 'February to April for cool breezes and lantern festivals',
-    estimated_daily_budget_usd: 40,
-    recommended_stay_days: 3,
-  },
-  null,
-  2,
-);
-
 export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
   destinations,
   travelLanguages,
@@ -43,93 +29,71 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
 }) => {
   const { t } = useI18n();
   const [selectedId, setSelectedId] = useState<string>(destinations[0]?.id ?? 'hanoi');
-  const [isCustomMode, setIsCustomMode] = useState(false);
-  const [customJsonText, setCustomJsonText] = useState(DEFAULT_CUSTOM_JSON);
-  const [targetLang, setTargetLang] = useState('vi');
+  const [targetLang, setTargetLang] = useState('en');
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationResult, setTranslationResult] =
     useState<DestinationTranslateResponse | null>(null);
 
+  const onErrorRef = useRef(onError);
+  const onCompleteRef = useRef(onOperationComplete);
+  onErrorRef.current = onError;
+  onCompleteRef.current = onOperationComplete;
+
   const selectedSample =
     destinations.find((d) => d.id === selectedId) ?? destinations[0];
 
-  const handleTranslateGuide = async () => {
-    onError(null);
-    let payloadData: Record<string, unknown> = {};
-
-    if (isCustomMode) {
-      try {
-        const parsed = JSON.parse(customJsonText) as unknown;
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-          onError(t('invalidJsonError'));
-          return;
-        }
-        payloadData = parsed as Record<string, unknown>;
-      } catch {
-        onError(t('invalidJsonError'));
-        return;
-      }
-    } else if (selectedSample) {
-      payloadData = { ...selectedSample.data };
-    }
-
-    setIsTranslating(true);
-    try {
-      const res = await apiClient.translateDestinationInfo({
-        destinationData: payloadData,
-        targetLanguage: targetLang,
-        servicePreset,
-      });
-      setTranslationResult(res);
-      onOperationComplete();
-    } catch (err) {
-      const msg =
-        err instanceof ApiClientError
-          ? `${err.message} (${err.code})`
-          : 'Failed to translate destination guide.';
-      onError(msg);
-    } finally {
+  // Feedback #13: Automatically translate & replace guide info when Language changes
+  useEffect(() => {
+    if (!selectedSample) return;
+    if (targetLang === 'en') {
+      setTranslationResult(null);
       setIsTranslating(false);
+      return;
     }
-  };
 
-  const handleDownloadJson = () => {
-    if (!translationResult) return;
-    const blob = new Blob([JSON.stringify(translationResult.translated_data, null, 2)], {
-      type: 'application/json;charset=utf-8',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `WanderLingo_Guide_${translationResult.target_language}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+    const controller = new AbortController();
+    setIsTranslating(true);
+    onErrorRef.current(null);
 
-  const activeSourceData: Record<string, unknown> = isCustomMode
-    ? (() => {
-        try {
-          const parsed = JSON.parse(customJsonText) as unknown;
-          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-            return parsed as Record<string, unknown>;
-          }
-          return {};
-        } catch {
-          return {};
+    apiClient
+      .translateDestinationInfo(
+        {
+          destinationData: { ...selectedSample.data },
+          targetLanguage: targetLang,
+          servicePreset,
+        },
+        controller.signal,
+      )
+      .then((res) => {
+        if (!controller.signal.aborted) {
+          setTranslationResult(res);
+          onCompleteRef.current();
         }
-      })()
-    : (selectedSample?.data ?? {});
+      })
+      .catch((err: unknown) => {
+        if ((err as Error).name === 'AbortError' || controller.signal.aborted) return;
+        const msg =
+          err instanceof ApiClientError
+            ? `${err.message} (${err.code})`
+            : 'Failed to translate destination guide.';
+        onErrorRef.current(msg);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsTranslating(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [selectedSample, targetLang, servicePreset]);
+
+  const activeData: Record<string, unknown> =
+    targetLang !== 'en' && translationResult
+      ? translationResult.translated_data
+      : (selectedSample?.data ?? {});
 
   const formatFieldValue = (val: unknown): string => {
-    if (val === null) return 'null';
-    if (val === undefined) return '';
-    if (typeof val === 'object') {
-      try {
-        return JSON.stringify(val);
-      } catch {
-        return String(val);
-      }
-    }
+    if (val === null || val === undefined) return '';
     return String(val);
   };
 
@@ -140,209 +104,149 @@ export const DestinationGuidePanel: React.FC<DestinationGuidePanelProps> = ({
       .replace(/\b\w/g, (c) => c.toUpperCase())
       .replace(/\(Usd\)/g, '(USD)');
 
+  const getFieldIcon = (key: string) => {
+    if (key.includes('food')) return <Utensils className="h-4 w-4 text-[var(--accent-warm)]" />;
+    if (key.includes('time') || key.includes('days'))
+      return <Calendar className="h-4 w-4 text-[var(--accent-cyan)]" />;
+    if (key.includes('tip')) return <Lightbulb className="h-4 w-4 text-[var(--accent-warm)]" />;
+    if (key.includes('budget')) return <Wallet className="h-4 w-4 text-[var(--accent-primary)]" />;
+    return <MapPin className="h-4 w-4 text-[var(--accent-primary)]" />;
+  };
+
+  // Feedback #13: Remove "name" row inside the About this place box (shown in header instead)
+  const displayEntries = Object.entries(activeData).filter(
+    ([key]) => key.toLowerCase() !== 'name',
+  );
+
+  const displayName = formatFieldValue(activeData.name ?? selectedSample?.data.name ?? '');
+
   return (
     <div className="space-y-6">
-      {/* Sculpted Header & Destination Picker Card */}
-      <section className="wl-card p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-start gap-3.5">
+      {/* Feedback #14: Popular Destinations Header + Language Selector (no subtitle or Explore label) */}
+      <section className="wl-folio overflow-visible p-5 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex items-center gap-3.5">
             <div
               aria-hidden="true"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent-primary)]"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-tl-md rounded-tr-2xl rounded-br-md rounded-bl-2xl bg-[var(--accent-soft)] text-[var(--accent-primary)]"
             >
               <Compass className="h-6 w-6" />
             </div>
-            <div>
-              <h2 className="font-heading text-xl font-extrabold text-[var(--text-primary)]">
-                {t('destHeaderTitle')}
-              </h2>
-              <p className="mt-1 max-w-3xl text-base text-[var(--text-secondary)]">
-                {t('destHeaderSubtitle')}
-              </p>
-            </div>
+            <h2 className="font-heading text-2xl font-extrabold text-[var(--text-primary)]">
+              {t('destHeaderTitle')}
+            </h2>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setIsCustomMode((prev) => !prev);
-              setTranslationResult(null);
-            }}
-            className="flex min-h-[44px] items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-4 py-2 text-sm font-bold text-[var(--text-primary)] transition hover:border-[var(--accent-primary)]"
-          >
-            <Code2 className="h-4 w-4 text-[var(--accent-primary)]" aria-hidden="true" />
-            <span>{isCustomMode ? t('curatedModeBtn') : t('customJsonModeBtn')}</span>
-          </button>
-        </div>
-
-        {/* Curated Destination Pills OR Custom JSON Editor */}
-        {!isCustomMode ? (
-          <div className="mt-5">
-            <div className="mb-2.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-              {t('selectDestinationLabel')}
-            </div>
-            <div className="flex flex-wrap gap-2.5">
-              {destinations.map((dest) => {
-                const active = dest.id === selectedId;
-                return (
-                  <button
-                    key={dest.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedId(dest.id);
-                      setTranslationResult(null);
-                    }}
-                    aria-pressed={active}
-                    className={`flex min-h-[44px] items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold transition sm:text-base ${
-                      active
-                        ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)] text-white shadow-sm'
-                        : 'border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)] hover:text-[var(--text-primary)]'
-                    }`}
-                  >
-                    <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
-                    <span>{String(dest.data.name)}</span>
-                    <span
-                      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        active
-                          ? 'bg-white/20 text-white'
-                          : 'bg-[var(--bg-surface)] text-[var(--text-muted)]'
-                      }`}
-                    >
-                      {dest.badge}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ) : (
-          <div className="mt-5">
-            <p className="mb-2 text-sm text-[var(--text-secondary)]">{t('customJsonHelp')}</p>
-            <textarea
-              rows={8}
-              value={customJsonText}
-              onChange={(e) => setCustomJsonText(e.target.value)}
-              className="wl-well w-full p-4 font-mono text-sm text-[var(--text-primary)]"
-            />
-          </div>
-        )}
-
-        {/* Target Language & Translate Action */}
-        <div className="mt-5 flex flex-wrap items-end justify-between gap-4 border-t border-[var(--border-subtle)] pt-5">
           <div className="w-full sm:w-80">
             <LanguageCombobox
-              label={t('targetLanguage')}
+              label={t('destinationLanguageLabel')}
               value={targetLang}
-              onChange={(code) => {
-                setTargetLang(code);
-                setTranslationResult(null);
-              }}
+              onChange={setTargetLang}
               travelLanguages={travelLanguages}
               allLanguages={allLanguages}
             />
           </div>
+        </div>
 
-          <button
-            type="button"
-            disabled={isTranslating}
-            onClick={() => void handleTranslateGuide()}
-            className="flex min-h-[46px] items-center gap-2 rounded-full bg-[var(--accent-primary)] px-6 py-2.5 text-base font-bold text-white shadow-sm transition hover:bg-[var(--accent-primary-hover)] disabled:opacity-50"
-          >
-            <Sparkles className="h-4 w-4" aria-hidden="true" />
-            <span>{isTranslating ? t('translatingBtn') : t('translateGuideBtn')}</span>
-          </button>
+        {/* Curated Destination Pills */}
+        <div className="mt-5 flex flex-wrap gap-2.5">
+          {destinations.map((dest) => {
+            const active = dest.id === selectedId;
+            return (
+              <button
+                key={dest.id}
+                type="button"
+                onClick={() => setSelectedId(dest.id)}
+                aria-pressed={active}
+                className={`flex min-h-[44px] items-center gap-2 rounded-tl-md rounded-tr-2xl rounded-br-md rounded-bl-2xl border px-4 py-2 text-sm font-bold transition sm:text-base ${
+                  active
+                    ? 'wl-btn-primary border-transparent shadow-sm'
+                    : 'border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{String(dest.data.name)}</span>
+                <span
+                  className={`rounded-md px-2 py-0.5 text-xs font-semibold ${
+                    active
+                      ? 'bg-white/20 text-white'
+                      : 'bg-[var(--bg-surface)] text-[var(--text-muted)]'
+                  }`}
+                >
+                  {dest.badge}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </section>
 
-      {/* Side-by-Side Structured Comparison */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        {/* Original Destination Record */}
-        <section className="wl-card p-5 sm:p-6">
-          <h3 className="font-heading mb-4 text-base font-bold uppercase tracking-wider text-[var(--text-muted)]">
-            {t('originalFieldsTitle')}
-          </h3>
-          <div className="space-y-3">
-            {Object.entries(activeSourceData).map(([key, val]) => {
-              const isString = typeof val === 'string' && val.trim().length > 0;
-              return (
-                <div key={key} className="wl-well p-4">
-                  <div className="mb-1 flex items-center justify-between text-sm">
-                    <span className="font-bold text-[var(--text-primary)]">
-                      {formatFieldLabel(key)}
-                    </span>
-                    <span className="rounded-full bg-[var(--bg-surface)] px-2.5 py-0.5 font-mono text-xs text-[var(--text-muted)]">
-                      {isString ? 'text' : typeof val}
-                    </span>
-                  </div>
-                  <div className="text-base leading-relaxed text-[var(--text-secondary)]">
-                    {formatFieldValue(val)}
-                  </div>
+      {/* Feedback #13: Single In-Place "About this place" Guide Sheet */}
+      {selectedSample && (
+        <section className="wl-folio overflow-hidden">
+          <div className="p-5 sm:p-7">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-4">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider text-[var(--accent-cyan)]">
+                  {t('aboutPlaceTitle')}
                 </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Translated Destination Record */}
-        <section className="wl-card p-5 sm:p-6">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="font-heading text-base font-bold uppercase tracking-wider text-[var(--text-muted)]">
-              {t('translatedFieldsTitle')}
-            </h3>
-            {translationResult && (
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-bold text-[var(--accent-primary)]">
-                  {translationResult.target_language_name} ({translationResult.target_language}) ·{' '}
-                  {translationResult.latency_ms} ms
-                </span>
-                <button
-                  type="button"
-                  onClick={handleDownloadJson}
-                  title="Download JSON"
-                  aria-label="Download Translated JSON"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] text-[var(--text-primary)] hover:border-[var(--accent-primary)]"
-                >
-                  <Download className="h-4 w-4" aria-hidden="true" />
-                </button>
+                <div className="mt-1 flex flex-wrap items-center gap-2.5">
+                  <h3 className="font-heading text-2xl font-extrabold text-[var(--text-primary)] sm:text-3xl">
+                    {displayName}
+                  </h3>
+                  <span className="rounded-md bg-[var(--accent-warm-soft)] px-3 py-1 text-xs font-bold text-[var(--accent-warm)]">
+                    {selectedSample.badge}
+                  </span>
+                </div>
               </div>
-            )}
-          </div>
 
-          {!translationResult ? (
-            <div className="wl-well flex min-h-[280px] items-center justify-center border-dashed p-6 text-center text-base text-[var(--text-muted)]">
-              {isTranslating ? t('translatingBtn') : t('translateGuideBtn')}
+              {isTranslating ? (
+                <span className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent-soft)] px-3.5 py-1.5 text-xs font-bold text-[var(--accent-primary)]">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                  {t('translatingBtn')}
+                </span>
+              ) : (
+                translationResult &&
+                targetLang !== 'en' && (
+                  <span className="rounded-lg bg-[var(--accent-cyan-soft)] px-3.5 py-1.5 font-mono text-xs font-bold text-[var(--accent-cyan)]">
+                    {translationResult.target_language_name} ({translationResult.target_language}) ·{' '}
+                    {translationResult.latency_ms} ms
+                  </span>
+                )
+              )}
             </div>
-          ) : (
-            <div className="space-y-3">
-              {Object.entries(translationResult.translated_data).map(([key, val]) => {
-                const isTranslated = translationResult.translated_fields.includes(key);
+
+            <div
+              className={`grid grid-cols-1 gap-4 transition-opacity md:grid-cols-2 ${
+                isTranslating ? 'opacity-65' : 'opacity-100'
+              }`}
+            >
+              {displayEntries.map(([key, val]) => {
+                const isWide = key === 'description' || key === 'local_tip';
+                const isTip = key === 'local_tip';
                 return (
-                  <div key={key} className="wl-well p-4">
-                    <div className="mb-1 flex items-center justify-between gap-2 text-sm">
-                      <span className="font-bold text-[var(--text-primary)]">
-                        {formatFieldLabel(key)}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                          isTranslated
-                            ? 'bg-[var(--status-good-bg)] text-[var(--status-good-text)]'
-                            : 'bg-[var(--status-caution-bg)] text-[var(--status-caution-text)]'
-                        }`}
-                      >
-                        <Tag className="h-3 w-3" aria-hidden="true" />
-                        {isTranslated ? t('translatedStringTag') : t('preservedValueTag')}
-                      </span>
+                  <div
+                    key={key}
+                    className={`${isWide ? 'md:col-span-2' : ''} ${
+                      isTip
+                        ? 'rounded-tl-md rounded-tr-2xl rounded-br-md rounded-bl-2xl border-l-4 border-[var(--accent-warm)] bg-[var(--accent-warm-soft)]/70 p-4 sm:p-5'
+                        : 'wl-well p-4 sm:p-5'
+                    }`}
+                  >
+                    <div className="mb-1.5 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                      {getFieldIcon(key)}
+                      <span>{formatFieldLabel(key)}</span>
                     </div>
-                    <div className="text-base font-semibold leading-relaxed text-[var(--text-primary)]">
+                    <div className="text-base font-medium leading-relaxed text-[var(--text-primary)] sm:text-lg">
                       {formatFieldValue(val)}
                     </div>
                   </div>
                 );
               })}
             </div>
-          )}
+          </div>
         </section>
-      </div>
+      )}
     </div>
   );
 };

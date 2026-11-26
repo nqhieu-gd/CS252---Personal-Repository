@@ -1,12 +1,15 @@
 """Adapter layer isolating googletrans==4.0.2 network calls, linguistic metadata, & typo suggestions."""
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
 from importlib.metadata import PackageNotFoundError, version
 import re
-from typing import Any, Dict, List, Optional, Protocol
+import time
+from typing import Any, Dict, List, Optional, Protocol, Tuple
 import googletrans
 from googletrans import LANGUAGES, Translator
+from httpx import Timeout
 
 DEFAULT_CHROME_UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -66,6 +69,7 @@ class RawTranslatedResult:
     src: str
     dest: str
     pronunciation: Optional[str] = None
+    confidence: Optional[float] = None
     did_you_mean: Optional[str] = None
     corrected_tokens: List[str] = field(default_factory=list)
     alternatives: List[str] = field(default_factory=list)
@@ -308,7 +312,69 @@ class TranslatorAdapter(Protocol):
 
 
 class GoogleTrans4Adapter:
-    """Production adapter backed by py-googletrans (googletrans==4.0.2)."""
+    """Production adapter backed by py-googletrans (googletrans==4.0.2) with HTTP/2 pooling & anti-burst gating."""
+
+    def __init__(self, max_concurrent_upstream: int = 2, min_interval_sec: float = 0.12) -> None:
+        self._clients: Dict[Tuple[int, Tuple[str, ...]], Translator] = {}
+        self._semaphores: Dict[int, asyncio.Semaphore] = {}
+        self._pacing_locks: Dict[int, asyncio.Lock] = {}
+        self._last_call_ts: Dict[int, float] = {}
+        self._max_concurrent = max(1, max_concurrent_upstream)
+        self._min_interval_sec = max(0.0, min_interval_sec)
+
+    def _get_loop_primitives(self) -> Tuple[asyncio.Semaphore, asyncio.Lock, int]:
+        loop_id = id(asyncio.get_running_loop())
+        sem = self._semaphores.get(loop_id)
+        if sem is None:
+            sem = asyncio.Semaphore(self._max_concurrent)
+            self._semaphores[loop_id] = sem
+        lock = self._pacing_locks.get(loop_id)
+        if lock is None:
+            lock = asyncio.Lock()
+            self._pacing_locks[loop_id] = lock
+        return sem, lock, loop_id
+
+    async def _acquire_pacing_slot(self, lock: asyncio.Lock, loop_id: int) -> None:
+        if self._min_interval_sec <= 0:
+            return
+        async with lock:
+            now = time.monotonic()
+            last = self._last_call_ts.get(loop_id, 0.0)
+            wait_for = self._min_interval_sec - (now - last)
+            if wait_for > 0:
+                await asyncio.sleep(wait_for)
+            self._last_call_ts[loop_id] = time.monotonic()
+
+    def _get_translator(self, service_urls: List[str]) -> Tuple[Tuple[int, Tuple[str, ...]], Translator]:
+        loop_id = id(asyncio.get_running_loop())
+        urls_tuple = tuple(service_urls) if service_urls else ("translate.google.com",)
+        pool_key = (loop_id, urls_tuple)
+        translator = self._clients.get(pool_key)
+        if translator is None or translator.client.is_closed:
+            translator = Translator(
+                service_urls=list(urls_tuple),
+                user_agent=DEFAULT_CHROME_UA,
+                raise_exception=True,
+                timeout=Timeout(12.0, connect=6.0),
+                list_operation_max_concurrency=2,
+            )
+            _configure_translator(translator, list(urls_tuple))
+            self._clients[pool_key] = translator
+        return pool_key, translator
+
+    async def _evict_client(self, pool_key: Tuple[int, Tuple[str, ...]]) -> None:
+        stale = self._clients.pop(pool_key, None)
+        if stale is not None and not stale.client.is_closed:
+            try:
+                await stale.client.aclose()
+            except Exception:
+                pass
+
+    async def aclose(self) -> None:
+        """Close all pooled httpx.AsyncClient instances cleanly on shutdown."""
+        keys = list(self._clients.keys())
+        for key in keys:
+            await self._evict_client(key)
 
     async def translate_text(
         self,
@@ -317,49 +383,59 @@ class GoogleTrans4Adapter:
         dest: str,
         service_urls: List[str],
     ) -> RawTranslatedResult:
-        async with Translator(
-            service_urls=service_urls,
-            user_agent=DEFAULT_CHROME_UA,
-            raise_exception=True,
-        ) as translator:
-            _configure_translator(translator, service_urls)
-            result = await translator.translate(text, src=src, dest=dest)
-            translated_str = str(getattr(result, "text", text))
-            origin_str = str(getattr(result, "origin", text))
-            src_code = normalize_detected_lang(getattr(result, "src", src))
-            dest_code = str(getattr(result, "dest", dest)).lower()
-            pron = extract_pronunciation(result, translated_str, origin_str)
-            did_you_mean, corrected_tokens = extract_did_you_mean(result, origin_str)
-            alternatives = extract_alternatives(result, translated_str)
-            dictionary, definitions = extract_dictionary_and_definitions(result)
-            return RawTranslatedResult(
-                origin=origin_str,
-                text=translated_str,
-                src=src_code,
-                dest=dest_code,
-                pronunciation=pron,
-                did_you_mean=did_you_mean,
-                corrected_tokens=corrected_tokens,
-                alternatives=alternatives,
-                dictionary=dictionary,
-                definitions=definitions,
-            )
+        sem, lock, loop_id = self._get_loop_primitives()
+        async with sem:
+            await self._acquire_pacing_slot(lock, loop_id)
+            pool_key, translator = self._get_translator(service_urls)
+            try:
+                result = await translator.translate(text, src=src, dest=dest)
+            except Exception:
+                await self._evict_client(pool_key)
+                raise
+
+        translated_str = str(getattr(result, "text", text))
+        origin_str = str(getattr(result, "origin", text))
+        src_code = normalize_detected_lang(getattr(result, "src", src))
+        dest_code = str(getattr(result, "dest", dest)).lower()
+        extra_data = getattr(result, "extra_data", None)
+        raw_conf = extra_data.get("confidence") if isinstance(extra_data, dict) else None
+        conf = normalize_confidence(raw_conf)
+        pron = extract_pronunciation(result, translated_str, origin_str)
+        did_you_mean, corrected_tokens = extract_did_you_mean(result, origin_str)
+        alternatives = extract_alternatives(result, translated_str)
+        dictionary, definitions = extract_dictionary_and_definitions(result)
+        return RawTranslatedResult(
+            origin=origin_str,
+            text=translated_str,
+            src=src_code,
+            dest=dest_code,
+            pronunciation=pron,
+            confidence=conf,
+            did_you_mean=did_you_mean,
+            corrected_tokens=corrected_tokens,
+            alternatives=alternatives,
+            dictionary=dictionary,
+            definitions=definitions,
+        )
 
     async def detect_text(
         self,
         text: str,
         service_urls: List[str],
     ) -> RawDetectedResult:
-        async with Translator(
-            service_urls=service_urls,
-            user_agent=DEFAULT_CHROME_UA,
-            raise_exception=True,
-        ) as translator:
-            _configure_translator(translator, service_urls)
-            detection = await translator.detect(text)
-            lang_code = normalize_detected_lang(getattr(detection, "lang", "en"))
-            conf = normalize_confidence(getattr(detection, "confidence", None))
-            return RawDetectedResult(lang=lang_code, confidence=conf)
+        sem, lock, loop_id = self._get_loop_primitives()
+        async with sem:
+            await self._acquire_pacing_slot(lock, loop_id)
+            pool_key, translator = self._get_translator(service_urls)
+            try:
+                detection = await translator.detect(text)
+            except Exception:
+                await self._evict_client(pool_key)
+                raise
+
+        lang_code = normalize_detected_lang(getattr(detection, "lang", "en"))
+        conf = normalize_confidence(getattr(detection, "confidence", None))
+        return RawDetectedResult(lang=lang_code, confidence=conf)
 
 
 def get_googletrans_version() -> str:

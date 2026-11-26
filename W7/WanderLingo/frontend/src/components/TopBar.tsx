@@ -83,14 +83,14 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]/85 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] backdrop-blur-xl">
         <div className="mx-auto max-w-7xl px-4 py-3.5 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             {/* Travel Brand Emblem */}
             <div className="flex items-center gap-3.5">
               <div
                 aria-hidden="true"
-                className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 via-cyan-500 to-orange-500 text-white shadow-md"
+                className="flex h-12 w-12 items-center justify-center rounded-tl-lg rounded-tr-2xl rounded-br-lg rounded-bl-2xl bg-gradient-to-br from-[#5b3df5] via-[#0891b2] to-[#c8431f] text-white shadow-md"
               >
                 <Plane className="h-6 w-6" />
               </div>
@@ -140,7 +140,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   aria-pressed={locale === 'en'}
                   className={`rounded-full px-3.5 py-1.5 transition ${
                     locale === 'en'
-                      ? 'bg-[var(--accent-primary)] text-white shadow-xs'
+                      ? 'wl-btn-primary shadow-xs'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
@@ -152,7 +152,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   aria-pressed={locale === 'vi'}
                   className={`rounded-full px-3.5 py-1.5 transition ${
                     locale === 'vi'
-                      ? 'bg-[var(--accent-primary)] text-white shadow-xs'
+                      ? 'wl-btn-primary shadow-xs'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
@@ -160,21 +160,21 @@ export const TopBar: React.FC<TopBarProps> = ({
                 </button>
               </div>
 
-              {/* Bright / Dim Theme Toggle Pill */}
+              {/* Light Theme / Dark Theme Toggle Pill */}
               <button
                 type="button"
                 onClick={toggleTheme}
-                aria-label="Toggle Bright or Dim Theme"
+                aria-label="Toggle Light Theme or Dark Theme"
                 className="flex min-h-[44px] items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:border-[var(--accent-primary)] hover:bg-[var(--bg-surface-hover)]"
               >
                 {theme === 'dark' ? (
                   <>
-                    <Sun className="h-4 w-4 text-amber-400" aria-hidden="true" />
+                    <Sun className="h-4 w-4 text-[var(--accent-warm)]" aria-hidden="true" />
                     <span>{t('themeLight')}</span>
                   </>
                 ) : (
                   <>
-                    <Moon className="h-4 w-4 text-sky-600" aria-hidden="true" />
+                    <Moon className="h-4 w-4 text-[var(--accent-primary)]" aria-hidden="true" />
                     <span>{t('themeDark')}</span>
                   </>
                 )}
@@ -182,9 +182,9 @@ export const TopBar: React.FC<TopBarProps> = ({
             </div>
           </div>
 
-          {/* Sculpted Pill-Track Workspace Switcher */}
+          {/* Editorial Tab Switcher */}
           <nav aria-label="Workspaces" className="mt-3.5 flex overflow-x-auto pb-0.5">
-            <div className="inline-flex min-w-full gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-1.5 sm:min-w-0">
+            <div className="inline-flex min-w-full gap-1.5 rounded-tl-lg rounded-tr-2xl rounded-br-lg rounded-bl-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-1.5 sm:min-w-0">
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -193,9 +193,9 @@ export const TopBar: React.FC<TopBarProps> = ({
                     type="button"
                     onClick={() => onSelectTab(tab.id)}
                     aria-current={isActive ? 'page' : undefined}
-                    className={`flex min-h-[42px] shrink-0 flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition sm:flex-initial sm:px-5 ${
+                    className={`flex min-h-[42px] shrink-0 flex-1 items-center justify-center gap-2 rounded-tl-md rounded-tr-xl rounded-br-md rounded-bl-xl px-4 py-2 text-sm font-bold transition sm:flex-initial sm:px-5 ${
                       isActive
-                        ? 'bg-[var(--accent-primary)] text-white shadow-sm'
+                        ? 'wl-btn-primary shadow-sm'
                         : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]'
                     }`}
                   >
@@ -300,7 +300,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             <button
               type="button"
               onClick={() => setSettingsOpen(false)}
-              className="min-h-[44px] rounded-full bg-[var(--accent-primary)] px-6 py-2 text-sm font-bold text-white transition hover:bg-[var(--accent-primary-hover)]"
+              className="wl-btn-primary min-h-[44px] rounded-full px-6 py-2 text-sm font-bold"
             >
               {t('closeDialogBtn')}
             </button>

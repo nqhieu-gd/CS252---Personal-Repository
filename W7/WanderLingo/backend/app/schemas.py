@@ -124,49 +124,6 @@ class TranslateResponse(BaseModel):
     latency_ms: float
 
 
-class MultiTargetTranslateRequest(BaseModel):
-    text: str = Field(..., min_length=1, max_length=MAX_TEXT_LENGTH)
-    src: str = Field(default="auto")
-    targets: List[str] = Field(..., min_length=1, max_length=6)
-    service_preset: str = Field(default=DEFAULT_SERVICE_PRESET)
-
-    @field_validator("text")
-    @classmethod
-    def validate_non_blank(cls, value: str) -> str:
-        stripped = value.strip()
-        if not stripped:
-            raise ValueError("Text must not be empty or whitespace only.")
-        return stripped
-
-    @field_validator("service_preset")
-    @classmethod
-    def validate_preset(cls, value: str) -> str:
-        if value not in SERVICE_URL_PRESETS:
-            raise ValueError(f"Unsupported service_preset '{value}'. Allowed: {list(SERVICE_URL_PRESETS.keys())}")
-        return value
-
-
-class MultiTargetItem(BaseModel):
-    dest: str
-    dest_name: str
-    text: Optional[str] = None
-    pronunciation: Optional[str] = None
-    skipped: bool = False
-    cached: bool = False
-    error: Optional[str] = None
-
-
-class MultiTargetTranslateResponse(BaseModel):
-    origin: str
-    src: str
-    src_name: str
-    did_you_mean: Optional[str] = None
-    corrected_tokens: List[str] = Field(default_factory=list)
-    results: List[MultiTargetItem]
-    service_preset: str
-    latency_ms: float
-
-
 class BulkTranslateRequest(BaseModel):
     texts: List[str] = Field(..., min_length=1, max_length=MAX_BULK_ITEMS)
     src: str = Field(default="auto")

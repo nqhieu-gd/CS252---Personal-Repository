@@ -56,7 +56,7 @@ LANGUAGE_CODE_ALIASES: Dict[str, str] = {
 # Validation & protection limits (Tutorial Section 7: Next Steps)
 MAX_TEXT_LENGTH = int(os.getenv("WANDERLINGO_MAX_TEXT_LENGTH", "5000"))
 MAX_BULK_ITEMS = int(os.getenv("WANDERLINGO_MAX_BULK_ITEMS", "25"))
-BULK_CONCURRENCY_LIMIT = int(os.getenv("WANDERLINGO_BULK_CONCURRENCY", "3"))
+BULK_CONCURRENCY_LIMIT = int(os.getenv("WANDERLINGO_BULK_CONCURRENCY", "2"))
 
 # Cache configuration
 CACHE_TTL_SECONDS = int(os.getenv("WANDERLINGO_CACHE_TTL_SECONDS", "1800"))

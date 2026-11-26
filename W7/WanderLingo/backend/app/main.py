@@ -1,13 +1,16 @@
 """FastAPI application entrypoint for WanderLingo."""
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import AsyncIterator
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import ALLOWED_ORIGINS, APP_NAME, APP_VERSION
+from app.dependencies import get_translation_engine
 from app.routers import system, translate, travel
 from app.services.translator_service import (
     InvalidLanguageCodeError,
@@ -15,10 +18,17 @@ from app.services.translator_service import (
 )
 
 
+@asynccontextmanager
+async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    yield
+    await get_translation_engine().aclose()
+
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title=APP_NAME,
         version=APP_VERSION,
+        lifespan=_lifespan,
         description=(
             "Multilingual Travel Companion API powered by py-googletrans (googletrans==4.0.2). "
             "Implements language detection, single & bulk translation, custom service_urls presets, "

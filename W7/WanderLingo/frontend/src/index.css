@@ -2,78 +2,116 @@
 
 :root,
 html[data-theme="light"] {
-  --font-heading: "Plus Jakarta Sans", "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-sans: "Be Vietnam Pro", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: "Outfit", "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: "Be Vietnam Pro", "Outfit", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
 
-  /* Bright Coastal Daylight + Warm Sunset Travel Palette */
-  --bg-canvas: #f0f9ff;
+  /* Light Theme: Multi-Tone Scenic Wash (Cream + Lavender + Cyan Lagoon + Terracotta Sunset) */
+  --bg-canvas: #f5efe4;
+  --bg-contour: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Cg fill='none' stroke='%235b3df5' stroke-opacity='0.055' stroke-width='1.2'%3E%3Cpath d='M-40 70 C 40 20, 130 120, 220 65 S 330 20, 380 80'/%3E%3Cpath d='M-40 155 C 55 105, 145 205, 240 145 S 335 95, 380 160'/%3E%3Cpath d='M-40 245 C 65 190, 160 290, 255 230 S 340 185, 380 250'/%3E%3Ccircle cx='255' cy='72' r='34' stroke='%23c8431f' stroke-opacity='0.06'/%3E%3C/g%3E%3C/svg%3E");
   --bg-aurora:
-    radial-gradient(1100px 420px at 14% -8%, rgba(14, 165, 233, 0.18), transparent 62%),
-    radial-gradient(900px 380px at 88% -10%, rgba(249, 115, 22, 0.14), transparent 58%),
-    linear-gradient(180deg, #f0f9ff 0%, #f8fbff 48%, #fffaf5 100%);
-  --bg-surface: #ffffff;
+    var(--bg-contour),
+    radial-gradient(920px 520px at 6% 4%, rgba(109, 74, 255, 0.22), transparent 64%),
+    radial-gradient(860px 480px at 94% 8%, rgba(8, 145, 178, 0.20), transparent 60%),
+    radial-gradient(980px 560px at 88% 96%, rgba(217, 78, 40, 0.20), transparent 64%),
+    radial-gradient(780px 460px at 14% 92%, rgba(167, 139, 250, 0.18), transparent 62%),
+    linear-gradient(135deg, #f8f1e5 0%, #efeaf9 48%, #e9f5f8 100%);
+  --bg-surface: rgba(255, 253, 249, 0.94);
+  --bg-surface-solid: #fffdf9;
   --bg-surface-elevated: #ffffff;
-  --bg-surface-muted: #f2f8fd;
-  --bg-surface-hover: #e3f1fc;
-  --border-subtle: #cfe5f6;
-  --border-strong: #9fd0f0;
-  --text-primary: #0c2d48;
-  --text-secondary: #355673;
-  --text-muted: #5c7a96;
-  --accent-primary: #0284c7;
-  --accent-primary-hover: #0369a1;
-  --accent-soft: #e0f2fe;
-  --accent-warm: #ea580c;
-  --accent-warm-hover: #c2410c;
-  --accent-warm-soft: #ffedd5;
+  --bg-surface-muted: #efeaf9;
+  --bg-surface-tint: #e8e1f8;
+  --bg-surface-hover: #e1d8f6;
+  --border-subtle: #d3cae7;
+  --border-strong: #b1a3d4;
+  --text-primary: #1e2029;
+  --text-secondary: #45495c;
+  --text-muted: #666b80;
+
+  /* Violet Primary + Accessible Button Tokens */
+  --accent-primary: #5b3df5;
+  --accent-primary-hover: #4728df;
+  --btn-primary-bg: #5b3df5;
+  --btn-primary-hover: #4728df;
+  --btn-primary-text: #fffdf8;
+  --accent-soft: #ebe5fe;
+
+  /* Cyan Secondary Accent */
+  --accent-cyan: #087f9c;
+  --accent-cyan-soft: #dcf4fa;
+
+  /* Vermilion / Rust Warm Accent */
+  --accent-warm: #c8431f;
+  --accent-warm-hover: #ab3515;
+  --accent-warm-soft: #fdebe5;
+
   --status-good-bg: #dcfce7;
   --status-good-text: #166534;
   --status-caution-bg: #fef3c7;
   --status-caution-text: #9a3412;
   --status-warning-bg: #fee2e2;
   --status-warning-text: #b91c1c;
-  --shadow-card: 0 12px 32px -10px rgba(12, 74, 110, 0.09), 0 2px 6px -1px rgba(12, 74, 110, 0.04);
-  --shadow-dialog: 0 28px 64px -12px rgba(12, 45, 72, 0.26);
-  --scrim-bg: rgba(12, 34, 56, 0.48);
+
+  --shadow-card: 0 18px 40px -16px rgba(35, 28, 66, 0.14), 0 2px 8px -2px rgba(35, 28, 66, 0.06);
+  --shadow-dialog: 0 28px 64px -12px rgba(26, 24, 41, 0.28);
+  --scrim-bg: rgba(24, 23, 36, 0.52);
   color-scheme: light;
 }
 
 html[data-theme="dark"] {
-  --font-heading: "Plus Jakarta Sans", "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-sans: "Be Vietnam Pro", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: "Outfit", "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: "Be Vietnam Pro", "Outfit", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
 
-  /* Dim Twilight Cabin Palette — low-glare, restful contrast */
-  --bg-canvas: #131924;
+  /* Dark Theme: Multi-Tone Twilight Horizon (Charcoal + Violet Nebula + Cyan Mist + Rust Ember) */
+  --bg-canvas: #141622;
+  --bg-contour: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Cg fill='none' stroke='%23b19dff' stroke-opacity='0.06' stroke-width='1.2'%3E%3Cpath d='M-40 70 C 40 20, 130 120, 220 65 S 330 20, 380 80'/%3E%3Cpath d='M-40 155 C 55 105, 145 205, 240 145 S 335 95, 380 160'/%3E%3Cpath d='M-40 245 C 65 190, 160 290, 255 230 S 340 185, 380 250'/%3E%3Ccircle cx='255' cy='72' r='34' stroke='%2338d9f5' stroke-opacity='0.065'/%3E%3C/g%3E%3C/svg%3E");
   --bg-aurora:
-    radial-gradient(1000px 380px at 16% -10%, rgba(56, 189, 248, 0.09), transparent 62%),
-    radial-gradient(850px 340px at 86% -12%, rgba(251, 146, 60, 0.07), transparent 58%),
-    linear-gradient(180deg, #131924 0%, #151c28 100%);
-  --bg-surface: #1b2332;
-  --bg-surface-elevated: #202a3c;
-  --bg-surface-muted: #151c29;
-  --bg-surface-hover: #263247;
-  --border-subtle: #2a374e;
-  --border-strong: #3b4d6b;
-  --text-primary: #e4ebf5;
-  --text-secondary: #a8b8cf;
-  --text-muted: #7e91ad;
-  --accent-primary: #38bdf8;
-  --accent-primary-hover: #7dd3fc;
-  --accent-soft: rgba(56, 189, 248, 0.14);
-  --accent-warm: #fb923c;
-  --accent-warm-hover: #fdba74;
-  --accent-warm-soft: rgba(251, 146, 60, 0.15);
-  --status-good-bg: rgba(34, 197, 94, 0.15);
+    var(--bg-contour),
+    radial-gradient(940px 520px at 8% 6%, rgba(124, 92, 252, 0.24), transparent 64%),
+    radial-gradient(840px 460px at 92% 10%, rgba(34, 211, 238, 0.16), transparent 60%),
+    radial-gradient(960px 540px at 88% 95%, rgba(232, 99, 63, 0.19), transparent 64%),
+    radial-gradient(760px 440px at 12% 92%, rgba(91, 61, 245, 0.16), transparent 62%),
+    linear-gradient(140deg, #141622 0%, #1b1930 50%, #16212c 100%);
+  --bg-surface: rgba(31, 33, 47, 0.93);
+  --bg-surface-solid: #1f212f;
+  --bg-surface-elevated: #272a3b;
+  --bg-surface-muted: #26293b;
+  --bg-surface-tint: #242039;
+  --bg-surface-hover: #30344b;
+  --border-subtle: #383c57;
+  --border-strong: #52587a;
+  --text-primary: #f4efe4;
+  --text-secondary: #cbc5b9;
+  --text-muted: #98938a;
+
+  /* Lavender Text Accent + Deep Violet CTA Surface */
+  --accent-primary: #b6a4ff;
+  --accent-primary-hover: #cabdff;
+  --btn-primary-bg: #6c49f5;
+  --btn-primary-hover: #5b37e3;
+  --btn-primary-text: #faf6ee;
+  --accent-soft: rgba(182, 164, 255, 0.16);
+
+  /* Electric Cyan Accent */
+  --accent-cyan: #38d9f5;
+  --accent-cyan-soft: rgba(56, 217, 245, 0.15);
+
+  /* Rust / Vermilion Warm Accent */
+  --accent-warm: #eb6b47;
+  --accent-warm-hover: #d85632;
+  --accent-warm-soft: rgba(235, 107, 71, 0.17);
+
+  --status-good-bg: rgba(34, 197, 94, 0.16);
   --status-good-text: #86efac;
-  --status-caution-bg: rgba(251, 191, 36, 0.15);
+  --status-caution-bg: rgba(251, 191, 36, 0.16);
   --status-caution-text: #fcd34d;
-  --status-warning-bg: rgba(248, 113, 113, 0.16);
+  --status-warning-bg: rgba(248, 113, 113, 0.18);
   --status-warning-text: #fca5a5;
-  --shadow-card: 0 14px 34px -12px rgba(5, 9, 16, 0.45), 0 2px 6px -1px rgba(5, 9, 16, 0.3);
-  --shadow-dialog: 0 28px 68px -12px rgba(3, 6, 12, 0.72);
-  --scrim-bg: rgba(7, 10, 17, 0.68);
+
+  --shadow-card: 0 18px 42px -14px rgba(5, 6, 12, 0.62), 0 2px 8px -2px rgba(5, 6, 12, 0.4);
+  --shadow-dialog: 0 30px 70px -12px rgba(4, 5, 10, 0.78);
+  --scrim-bg: rgba(9, 10, 16, 0.72);
   color-scheme: dark;
 }
 
@@ -100,7 +138,7 @@ h3,
 h4,
 .font-heading {
   font-family: var(--font-heading);
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
 }
 
 code,
@@ -119,25 +157,65 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* Sculpted Card & Well Surfaces */
+/*
+ * Editorial Travel Folio — Gradient Top-Arch Border that wraps smoothly around
+ * the curved top corners & upper shoulders of the box (no detached top stripe).
+ */
+.wl-folio {
+  position: relative;
+  border: 2.5px solid transparent;
+  border-radius: 1.5rem;
+  background:
+    linear-gradient(var(--bg-surface-solid), var(--bg-surface-solid)) padding-box,
+    linear-gradient(180deg, transparent 0%, var(--border-subtle) 44%, var(--border-subtle) 100%) border-box,
+    linear-gradient(90deg, var(--btn-primary-bg) 0%, var(--accent-cyan) 50%, var(--accent-warm) 100%) border-box;
+  box-shadow: var(--shadow-card);
+}
+
+/* Tactile Travel Cards & Inset Sheets */
 .wl-card {
   background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 1.65rem;
+  backdrop-filter: blur(10px);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 1.25rem;
   box-shadow: var(--shadow-card);
 }
 
 .wl-well {
   background-color: var(--bg-surface-muted);
   border: 1px solid var(--border-subtle);
-  border-radius: 1.25rem;
+  border-radius: 1rem;
 }
 
 .wl-dialog {
   background-color: var(--bg-surface-elevated);
-  border: 1px solid var(--border-strong);
-  border-radius: 1.85rem;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 1.5rem;
   box-shadow: var(--shadow-dialog);
+}
+
+.wl-btn-primary {
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  transition: background-color 180ms ease, transform 150ms ease, box-shadow 180ms ease;
+}
+
+.wl-btn-primary:hover:not(:disabled) {
+  background-color: var(--btn-primary-hover);
+}
+
+/* Phrasebook Ticket Chip with Left Color Bar */
+.wl-phrase-ticket {
+  border: 1px solid var(--border-subtle);
+  border-left-width: 4px;
+  border-radius: 0.45rem 0.95rem 0.95rem 0.45rem;
+  background-color: var(--bg-surface-muted);
+  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
+}
+
+.wl-phrase-ticket:hover {
+  background-color: var(--bg-surface-hover);
+  transform: translateY(-1px);
 }
 
 /* Accessible Focus Rings */
