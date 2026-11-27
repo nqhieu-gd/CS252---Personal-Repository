@@ -61,3 +61,7 @@ ____________________________________________________________________
 - In the Concierge Desk section, all replies and simulated follow-up are lost upon changing to another tabs (DONE)
 => Persisted Concierge Desk replies, custom inquiries, language overrides, and translated thread cache in `sessionStorage` (and user-posted Guest Reviews as well) so switching between tabs never loses state.
 - In the Concierge Desk section, when you don't translate a language since they are the same as your work language, you don't need to show that "I skip the translating", just print that exact message instead (DONE)
+____________________________________________________________________
+(Ver 5)
+- You don't choose your own language's reply in the Concierge Desk section, what if guest uses Thai language, and I choose to reply in Japanese? That does not even make sense, you should implement a by question reply, meaning you can not reply to guests freely, you can only reply to 1 exact of their message, and the language will be based on that (DONE)
+=> Removed the manual Reply Language picker completely and enforced by-question reply targeting: you can no longer send free untargeted replies — you click `Reply` on 1 specific guest message, which locks the outgoing translation strictly to that exact message's detected language and displays the quoted message snippet in both the composer and the sent reply card.
