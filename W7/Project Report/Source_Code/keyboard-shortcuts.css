@@ -1,0 +1,106 @@
+/* GM-05: Keyboard shortcuts reference dialog styles (adapted from shadcn/ui dialog + kbd + separator). */
+
+.mc-shortcuts-dialog {
+  width: min(38rem, calc(100vw - 28px));
+}
+
+.mc-shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+  margin-top: 16px;
+}
+
+.mc-shortcuts-group {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.mc-shortcuts-group-title {
+  margin: 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--mc-rule);
+  color: var(--mc-text);
+  font-family: var(--mc-heading-font);
+  font-size: .92rem;
+  font-weight: 600;
+}
+
+.mc-shortcuts-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.mc-shortcuts-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.mc-shortcuts-row dt {
+  margin: 0;
+  min-width: 0;
+  color: var(--mc-text);
+  font-size: .9rem;
+  overflow-wrap: anywhere;
+}
+
+.mc-shortcuts-row dd {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 4px;
+  margin: 0;
+}
+
+.mc-kbd-sep {
+  color: var(--mc-muted);
+  font-size: .8rem;
+}
+
+.mc-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--mc-field-border);
+  border-bottom-width: 2px;
+  border-radius: var(--mc-radius-menu-item);
+  background: var(--mc-paper);
+  color: var(--mc-text);
+  font-family: var(--mc-body-font);
+  font-size: .8rem;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.mc-shortcuts-note {
+  margin: 16px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--mc-rule);
+  color: var(--mc-muted);
+  font-size: .85rem;
+}
+
+@media (max-width: 680px) {
+  .mc-shortcuts-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (forced-colors: active) {
+  .mc-kbd {
+    border: 1px solid ButtonText;
+    background: Canvas;
+    color: CanvasText;
+  }
+}
