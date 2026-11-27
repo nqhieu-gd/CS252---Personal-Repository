@@ -97,14 +97,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex min-h-screen flex-col text-[var(--text-primary)]">
-      <TopBar
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        servicePreset={servicePreset}
-        onChangePreset={setServicePreset}
-        health={health}
-        onClearCache={() => void handleClearCache()}
-      />
+      <TopBar activeTab={activeTab} onSelectTab={setActiveTab} />
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-7 sm:px-6">
         <StatusBanner error={errorBanner} onDismiss={() => setErrorBanner(null)} />
@@ -162,7 +155,12 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      <Footer />
+      <Footer
+        servicePreset={servicePreset}
+        onChangePreset={setServicePreset}
+        health={health}
+        onClearCache={() => void handleClearCache()}
+      />
     </div>
   );
 };
