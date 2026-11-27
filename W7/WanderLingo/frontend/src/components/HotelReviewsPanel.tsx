@@ -45,6 +45,19 @@ const VIETNAM_REVIEW_PLACES = [
   'Phu Quoc Sunset Resort',
 ];
 
+const USER_REVIEWS_STORAGE_KEY = 'wanderlingo_user_reviews_session_v1';
+
+function loadSessionUserReviews(): HotelReviewItem[] {
+  try {
+    const raw = sessionStorage.getItem(USER_REVIEWS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as HotelReviewItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
   sampleReviews,
   travelLanguages,
@@ -54,7 +67,7 @@ export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
   onOperationComplete,
 }) => {
   const { t } = useI18n();
-  const [userReviews, setUserReviews] = useState<HotelReviewItem[]>([]);
+  const [userReviews, setUserReviews] = useState<HotelReviewItem[]>(loadSessionUserReviews);
   const [targetLang, setTargetLang] = useState('en');
   const [authorName, setAuthorName] = useState('');
   const [selectedHotel, setSelectedHotel] = useState(VIETNAM_REVIEW_PLACES[0]);
@@ -71,6 +84,15 @@ export const HotelReviewsPanel: React.FC<HotelReviewsPanelProps> = ({
     () => [...userReviews, ...sampleReviews].slice(0, 25),
     [userReviews, sampleReviews],
   );
+
+  // Persist user-posted reviews across tab switches
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(USER_REVIEWS_STORAGE_KEY, JSON.stringify(userReviews));
+    } catch {
+      // ignore storage errors
+    }
+  }, [userReviews]);
 
   // Clear stale translation banner if preset changes
   useEffect(() => {
