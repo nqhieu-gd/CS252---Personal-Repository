@@ -111,6 +111,12 @@ export const vi: TranslationDictionary = {
     'Nhập câu trả lời bằng ngôn ngữ làm việc (nhấn Enter để dịch & gửi)...',
   translateReplyBtn: 'Gửi Bản dịch Phản hồi',
   sentReplyHeader: 'Bạn → Đã dịch gửi',
+  replyAsHostTab: 'Trả lời (Chủ nhà / Lễ tân)',
+  simulateGuestTab: 'Mô phỏng Tin nhắn Tiếp theo của Khách',
+  guestFollowUpPlaceholder:
+    'Nhập tin nhắn tiếp theo từ khách bằng bất kỳ ngôn ngữ nào (nhấn Enter)...',
+  sendGuestFollowUpBtn: 'Gửi Tin nhắn Khách',
+  footerRoutingLink: 'Cấu hình Máy chủ & Cache',
   footerText:
     'WanderLingo · Trợ lý Du lịch & Khách sạn Đa ngôn ngữ · Tích hợp Google Translate',
 };
