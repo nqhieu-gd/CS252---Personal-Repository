@@ -90,7 +90,14 @@ def create_app() -> FastAPI:
 
         @app.get("/", include_in_schema=False)
         async def serve_spa_index() -> FileResponse:
-            return FileResponse(str(frontend_dist / "index.html"))
+            return FileResponse(
+                str(frontend_dist / "index.html"),
+                headers={
+                    "Cache-Control": "no-store, no-cache, must-revalidate",
+                    "Pragma": "no-cache",
+                    "Expires": "0",
+                },
+            )
 
     return app
 
