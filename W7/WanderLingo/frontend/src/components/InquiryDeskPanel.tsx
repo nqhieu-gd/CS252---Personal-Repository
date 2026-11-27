@@ -8,6 +8,7 @@ import {
   MessageSquareText,
   Send,
   Sparkles,
+  User,
   Volume2,
   Wand2,
   X,
@@ -32,10 +33,19 @@ interface InquiryDeskPanelProps {
   onOperationComplete: () => void;
 }
 
-interface SentReplyMessage extends TravelInquiryReplyResponse {
-  replyId: string;
-  sentAt: string;
-}
+type ThreadTurn =
+  | {
+      turnId: string;
+      role: 'host';
+      sentAt: string;
+      reply: TravelInquiryReplyResponse;
+    }
+  | {
+      turnId: string;
+      role: 'guest';
+      sentAt: string;
+      incoming: TravelInquiryResponse;
+    };
 
 export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
   sampleInquiries,
@@ -51,10 +61,11 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
   const [selectedId, setSelectedId] = useState<string>(sampleInquiries[0]?.id ?? '');
   const [staffLang, setStaffLang] = useState('en');
   const [processedCache, setProcessedCache] = useState<Record<string, TravelInquiryResponse>>({});
-  const [replyInput, setReplyInput] = useState('');
-  const [sentRepliesMap, setSentRepliesMap] = useState<Record<string, SentReplyMessage[]>>({});
+  const [composerRole, setComposerRole] = useState<'host' | 'guest'>('host');
+  const [composerText, setComposerText] = useState('');
+  const [threadTurnsMap, setThreadTurnsMap] = useState<Record<string, ThreadTurn[]>>({});
   const [isLoadingActive, setIsLoadingActive] = useState(false);
-  const [isSendingReply, setIsSendingReply] = useState(false);
+  const [isSubmittingTurn, setIsSubmittingTurn] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [newGuestName, setNewGuestName] = useState('');
   const [newInquiryText, setNewInquiryText] = useState('');
@@ -81,7 +92,7 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
 
   const activeCacheKey = activeInquiry ? makeCacheKey(activeInquiry.id, staffLang) : '';
   const activeProcessed = activeCacheKey ? processedCache[activeCacheKey] : undefined;
-  const activeSentReplies = activeInquiry ? (sentRepliesMap[activeInquiry.id] ?? []) : [];
+  const activeTurns = activeInquiry ? (threadTurnsMap[activeInquiry.id] ?? []) : [];
 
   const getLangName = (code: string) => {
     const found =
@@ -94,7 +105,6 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
   useEffect(() => {
     if (!activeInquiry || activeProcessed) return;
 
-    // Zero-network short-circuit when sample's native language matches Working Language
     if (activeInquiry.source_lang && activeInquiry.source_lang === staffLang) {
       const localSame: TravelInquiryResponse = {
         original_text: activeInquiry.inquiry_text,
@@ -177,39 +187,59 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
     );
   };
 
-  const handleSendTranslatedReply = async () => {
-    const draft = replyInput.trim();
-    const guestLang = activeProcessed?.detected_lang ?? activeInquiry?.source_lang;
-    if (!draft || !activeInquiry || !guestLang) return;
+  const handleSubmitChatTurn = async () => {
+    const draft = composerText.trim();
+    if (!draft || !activeInquiry) return;
     onError(null);
-    setIsSendingReply(true);
+    setIsSubmittingTurn(true);
+    const sentAt = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     try {
-      const res = await apiClient.translateInquiryReply({
-        replyText: draft,
-        staffLanguage: staffLang,
-        guestLanguage: guestLang,
-        servicePreset,
-      });
-      const message: SentReplyMessage = {
-        ...res,
-        replyId: `rep-${Date.now()}`,
-        sentAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setSentRepliesMap((prev) => ({
-        ...prev,
-        [activeInquiry.id]: [...(prev[activeInquiry.id] ?? []), message],
-      }));
-      setReplyInput('');
+      if (composerRole === 'host') {
+        const guestLang = activeProcessed?.detected_lang ?? activeInquiry.source_lang ?? 'en';
+        const res = await apiClient.translateInquiryReply({
+          replyText: draft,
+          staffLanguage: staffLang,
+          guestLanguage: guestLang,
+          servicePreset,
+        });
+        const turn: ThreadTurn = {
+          turnId: `host-${Date.now()}`,
+          role: 'host',
+          sentAt,
+          reply: res,
+        };
+        setThreadTurnsMap((prev) => ({
+          ...prev,
+          [activeInquiry.id]: [...(prev[activeInquiry.id] ?? []), turn],
+        }));
+      } else {
+        const res = await apiClient.processTravelInquiry({
+          inquiryText: draft,
+          targetLanguage: staffLang,
+          servicePreset,
+        });
+        const turn: ThreadTurn = {
+          turnId: `guest-${Date.now()}`,
+          role: 'guest',
+          sentAt,
+          incoming: res,
+        };
+        setThreadTurnsMap((prev) => ({
+          ...prev,
+          [activeInquiry.id]: [...(prev[activeInquiry.id] ?? []), turn],
+        }));
+      }
+      setComposerText('');
       onOperationComplete();
     } catch (err) {
       const msg =
         err instanceof ApiClientError
           ? `${err.message} (${err.code})`
-          : 'Failed to translate concierge reply.';
+          : 'Failed to process message.';
       onError(msg);
     } finally {
-      setIsSendingReply(false);
+      setIsSubmittingTurn(false);
     }
   };
 
@@ -242,7 +272,7 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* Top Inbox Header & Working Language Bar (V2 Feedback #9: No verbose explanation below title) */}
+      {/* Top Inbox Header & Working Language Bar */}
       <section className="wl-folio overflow-visible p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex items-center gap-3.5">
@@ -350,7 +380,7 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
                   cachedThread !== undefined
                     ? !cachedThread.needs_translation
                     : inq.source_lang === staffLang;
-                const replyCount = (sentRepliesMap[inq.id] ?? []).length;
+                const turnCount = (threadTurnsMap[inq.id] ?? []).length;
 
                 return (
                   <button
@@ -394,9 +424,9 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
 
                       <div className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
                         <span className="truncate">{inq.channel}</span>
-                        {replyCount > 0 && (
+                        {turnCount > 0 && (
                           <span className="rounded-full bg-[var(--accent-warm-soft)] px-2 py-0.2 text-[11px] font-bold text-[var(--accent-warm)]">
-                            {replyCount}
+                            +{turnCount}
                           </span>
                         )}
                       </div>
@@ -457,11 +487,13 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
 
               {/* Chat Bubbles Stream */}
               <div className="flex-1 space-y-5 overflow-y-auto p-5 sm:p-6">
-                {/* Incoming Guest Bubble (Left-Aligned) */}
+                {/* Initial Incoming Guest Bubble (Left-Aligned) */}
                 <div className="max-w-2xl space-y-2.5">
                   <div className="rounded-tl-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-4 sm:p-5">
                     <div className="mb-1.5 flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                      <span>{t('originalInquiryLabel')}</span>
+                      <span>
+                        {activeInquiry.guest_name} · {t('originalInquiryLabel')}
+                      </span>
                       <button
                         type="button"
                         onClick={() =>
@@ -502,7 +534,6 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
                       </div>
                     )}
 
-                    {/* Auto-Translated Meaning Card */}
                     {isLoadingActive && !activeProcessed ? (
                       <div className="mt-3.5 flex items-center gap-2 border-t border-[var(--border-subtle)] pt-3.5 text-sm font-semibold text-[var(--accent-primary)]">
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -531,106 +562,178 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
                   </div>
                 </div>
 
-                {/* Sent Reverse-Translated Reply Bubbles (Right-Aligned) */}
-                {activeSentReplies.map((rep) => (
-                  <div key={rep.replyId} className="ml-auto max-w-2xl">
-                    <div className="rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl border border-[var(--accent-primary)]/35 bg-[var(--bg-surface-tint)] p-4 sm:p-5">
-                      <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <span className="font-bold text-[var(--accent-primary)]">
-                          {t('sentReplyHeader')} {rep.dest_name} ({rep.dest})
-                        </span>
-                        <span className="font-mono text-[var(--text-muted)]">{rep.sentAt}</span>
-                      </div>
+                {/* Subsequent Multi-Turn Conversation Bubbles (Both Host Replies & Simulated Guest Follow-Ups) */}
+                {activeTurns.map((turn) =>
+                  turn.role === 'host' ? (
+                    <div key={turn.turnId} className="ml-auto max-w-2xl">
+                      <div className="rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl border border-[var(--accent-primary)]/35 bg-[var(--bg-surface-tint)] p-4 sm:p-5">
+                        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                          <span className="font-bold text-[var(--accent-primary)]">
+                            {t('sentReplyHeader')} {turn.reply.dest_name} ({turn.reply.dest})
+                          </span>
+                          <span className="font-mono text-[var(--text-muted)]">{turn.sentAt}</span>
+                        </div>
 
-                      <p className="font-heading text-lg font-bold leading-relaxed text-[var(--text-primary)] sm:text-xl">
-                        {rep.translated_reply}
-                      </p>
-
-                      {rep.pronunciation && (
-                        <p className="mt-1 font-mono text-xs text-[var(--accent-cyan)]">
-                          {rep.pronunciation}
+                        <p className="font-heading text-lg font-bold leading-relaxed text-[var(--text-primary)] sm:text-xl">
+                          {turn.reply.translated_reply}
                         </p>
-                      )}
 
-                      <p className="mt-2.5 border-t border-[var(--border-subtle)] pt-2 text-xs text-[var(--text-secondary)]">
-                        {rep.staff_text}
-                      </p>
+                        {turn.reply.pronunciation && (
+                          <p className="mt-1 font-mono text-xs text-[var(--accent-cyan)]">
+                            {turn.reply.pronunciation}
+                          </p>
+                        )}
 
-                      <div className="mt-3 flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleSpeak(rep.translated_reply, rep.dest)}
-                          className="flex min-h-[34px] items-center gap-1 rounded-lg bg-[var(--bg-surface-solid)] px-3 py-1 text-xs font-bold text-[var(--text-primary)] transition hover:text-[var(--accent-cyan)]"
-                        >
-                          <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
-                          <span>{t('speakBtn')}</span>
-                        </button>
+                        <p className="mt-2.5 border-t border-[var(--border-subtle)] pt-2 text-xs text-[var(--text-secondary)]">
+                          {turn.reply.staff_text}
+                        </p>
 
-                        <button
-                          type="button"
-                          onClick={() => void handleCopy(rep.replyId, rep.translated_reply)}
-                          className="flex min-h-[34px] items-center gap-1 rounded-lg bg-[var(--bg-surface-solid)] px-3 py-1 text-xs font-bold text-[var(--text-primary)] transition hover:text-[var(--accent-primary)]"
-                        >
-                          {copiedId === rep.replyId ? (
-                            <>
-                              <Check className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
-                              <span>{t('copiedBtn')}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-                              <span>{t('copyBtn')}</span>
-                            </>
-                          )}
-                        </button>
+                        <div className="mt-3 flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSpeak(turn.reply.translated_reply, turn.reply.dest)}
+                            className="flex min-h-[34px] items-center gap-1 rounded-lg bg-[var(--bg-surface-solid)] px-3 py-1 text-xs font-bold text-[var(--text-primary)] transition hover:text-[var(--accent-cyan)]"
+                          >
+                            <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
+                            <span>{t('speakBtn')}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => void handleCopy(turn.turnId, turn.reply.translated_reply)}
+                            className="flex min-h-[34px] items-center gap-1 rounded-lg bg-[var(--bg-surface-solid)] px-3 py-1 text-xs font-bold text-[var(--text-primary)] transition hover:text-[var(--accent-primary)]"
+                          >
+                            {copiedId === turn.turnId ? (
+                              <>
+                                <Check className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
+                                <span>{t('copiedBtn')}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                                <span>{t('copyBtn')}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ) : (
+                    <div key={turn.turnId} className="max-w-2xl">
+                      <div className="rounded-tl-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-4 sm:p-5">
+                        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                          <span className="font-bold text-[var(--accent-cyan)]">
+                            {activeInquiry.guest_name} · {turn.incoming.detected_language} (
+                            {turn.incoming.detected_lang})
+                          </span>
+                          <span className="font-mono text-[var(--text-muted)]">{turn.sentAt}</span>
+                        </div>
+
+                        <p className="text-base font-medium leading-relaxed text-[var(--text-primary)] sm:text-lg">
+                          “{turn.incoming.original_text}”
+                        </p>
+
+                        <div className="mt-3 border-t border-[var(--border-subtle)] pt-3">
+                          {turn.incoming.needs_translation ? (
+                            <div className="rounded-xl border-l-4 border-[var(--btn-primary-bg)] bg-[var(--bg-surface-solid)] p-3.5">
+                              <div className="mb-1 text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)]">
+                                {t('translatedForYouLabel')} ({turn.incoming.target_language})
+                              </div>
+                              <p className="text-base font-bold leading-relaxed text-[var(--text-primary)]">
+                                {turn.incoming.translated_text}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="rounded-xl bg-[var(--status-caution-bg)] px-3.5 py-2 text-xs font-bold text-[var(--status-caution-text)]">
+                              {t('sameLanguageNotice')}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ),
+                )}
               </div>
 
-              {/* Bottom 2-Way Reply Composer */}
+              {/* Bottom 2-Way Interactive Composer (Reply as Host OR Simulate Guest Follow-Up) */}
               <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-surface-muted)]/60 p-4 sm:px-6">
-                {staffLang === 'en' && activeInquiry.suggested_reply_en && (
-                  <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-                    <span className="line-clamp-1 text-[var(--text-muted)]">
-                      <strong className="text-[var(--text-secondary)]">
-                        {t('quickSuggestedReplyLabel')}
-                      </strong>{' '}
-                      {activeInquiry.suggested_reply_en}
-                    </span>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div className="inline-flex rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] p-0.5 text-xs font-bold">
                     <button
                       type="button"
-                      onClick={() => setReplyInput(activeInquiry.suggested_reply_en)}
-                      className="shrink-0 rounded-md bg-[var(--accent-soft)] px-2.5 py-1 font-bold text-[var(--accent-primary)] transition hover:bg-[var(--btn-primary-bg)] hover:text-white"
+                      onClick={() => setComposerRole('host')}
+                      className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${
+                        composerRole === 'host'
+                          ? 'wl-btn-primary'
+                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      }`}
                     >
-                      {t('useSuggestedReplyBtn')}
+                      <Send className="h-3.5 w-3.5" aria-hidden="true" />
+                      <span>{t('replyAsHostTab')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setComposerRole('guest')}
+                      className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${
+                        composerRole === 'guest'
+                          ? 'bg-[var(--accent-cyan)] text-white'
+                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      <User className="h-3.5 w-3.5" aria-hidden="true" />
+                      <span>{t('simulateGuestTab')}</span>
                     </button>
                   </div>
-                )}
+
+                  {composerRole === 'host' &&
+                    staffLang === 'en' &&
+                    activeInquiry.suggested_reply_en && (
+                      <button
+                        type="button"
+                        onClick={() => setComposerText(activeInquiry.suggested_reply_en)}
+                        className="shrink-0 rounded-md bg-[var(--accent-soft)] px-2.5 py-1 text-xs font-bold text-[var(--accent-primary)] transition hover:bg-[var(--btn-primary-bg)] hover:text-white"
+                      >
+                        {t('useSuggestedReplyBtn')}
+                      </button>
+                    )}
+                </div>
 
                 <div className="flex flex-col gap-2.5 sm:flex-row">
                   <input
                     type="text"
-                    value={replyInput}
-                    onChange={(e) => setReplyInput(e.target.value)}
+                    value={composerText}
+                    onChange={(e) => setComposerText(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        void handleSendTranslatedReply();
+                        void handleSubmitChatTurn();
                       }
                     }}
-                    placeholder={t('conciergeReplyPlaceholder')}
+                    placeholder={
+                      composerRole === 'host'
+                        ? t('conciergeReplyPlaceholder')
+                        : t('guestFollowUpPlaceholder')
+                    }
                     className="min-h-[46px] flex-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] px-4 py-2.5 text-base text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
                   />
                   <button
                     type="button"
-                    disabled={isSendingReply || !replyInput.trim()}
-                    onClick={() => void handleSendTranslatedReply()}
-                    className="wl-btn-primary flex min-h-[46px] shrink-0 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold shadow-xs disabled:opacity-45"
+                    disabled={isSubmittingTurn || !composerText.trim()}
+                    onClick={() => void handleSubmitChatTurn()}
+                    className={`flex min-h-[46px] shrink-0 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold shadow-xs disabled:opacity-45 ${
+                      composerRole === 'host'
+                        ? 'wl-btn-primary'
+                        : 'bg-[var(--accent-cyan)] text-white transition hover:opacity-90'
+                    }`}
                   >
                     <Send className="h-4 w-4" aria-hidden="true" />
-                    <span>{isSendingReply ? t('translatingBtn') : t('translateReplyBtn')}</span>
+                    <span>
+                      {isSubmittingTurn
+                        ? t('translatingBtn')
+                        : composerRole === 'host'
+                          ? t('translateReplyBtn')
+                          : t('sendGuestFollowUpBtn')}
+                    </span>
                   </button>
                 </div>
               </div>
