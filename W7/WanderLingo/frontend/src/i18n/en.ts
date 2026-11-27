@@ -102,18 +102,13 @@ export const en = {
   addAndProcessInquiryBtn: 'Add to Inbox',
   originalInquiryLabel: 'Original Message',
   translatedForYouLabel: 'Translated to Working Language',
-  sameLanguageNotice: 'Already written in your working language — redundant API translation skipped.',
+  replyLanguageLabel: 'Reply Language',
   quickSuggestedReplyLabel: 'Quick Reply Template:',
   useSuggestedReplyBtn: 'Fill Template',
   conciergeReplyPlaceholder:
     'Write your reply in your working language (press Enter to translate & send)...',
   translateReplyBtn: 'Send Translated Reply',
-  sentReplyHeader: 'You → Translated for',
-  replyAsHostTab: 'Reply as Host',
-  simulateGuestTab: 'Simulate Guest Follow-Up',
-  guestFollowUpPlaceholder:
-    'Type a follow-up message from the guest in any language (press Enter)...',
-  sendGuestFollowUpBtn: 'Add Guest Message',
+  sentReplyHeader: 'You → Translated to',
   footerRoutingLink: 'Routing & Cache',
   footerText:
     'WanderLingo · Multilingual Travel & Hospitality Companion · Powered by Google Translate',
