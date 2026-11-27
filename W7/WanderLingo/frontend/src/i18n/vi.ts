@@ -104,13 +104,15 @@ export const vi: TranslationDictionary = {
   addAndProcessInquiryBtn: 'Đưa vào Hộp thư',
   originalInquiryLabel: 'Tin nhắn Gốc',
   translatedForYouLabel: 'Bản dịch sang Ngôn ngữ Làm việc',
-  replyLanguageLabel: 'Ngôn ngữ Trả lời',
+  replyToMessageBtn: 'Trả lời',
+  replyingToBannerPrefix: 'Đang trả lời tin nhắn',
+  selectMessageToReplyHint:
+    'Nhấn nút "Trả lời" trên một tin nhắn cụ thể của khách ở trên để phản hồi đúng ngôn ngữ của tin nhắn đó.',
   quickSuggestedReplyLabel: 'Mẫu câu trả lời nhanh:',
   useSuggestedReplyBtn: 'Điền mẫu',
-  conciergeReplyPlaceholder:
-    'Nhập câu trả lời bằng ngôn ngữ làm việc (nhấn Enter để dịch & gửi)...',
-  translateReplyBtn: 'Gửi Bản dịch Phản hồi',
-  sentReplyHeader: 'Bạn → Đã dịch sang',
+  conciergeReplyPlaceholder: 'Nhập câu trả lời cho tin nhắn này (nhấn Enter để gửi)...',
+  translateReplyBtn: 'Gửi Phản hồi',
+  sentReplyHeader: 'Đã trả lời bằng',
   footerRoutingLink: 'Cấu hình Máy chủ & Cache',
   footerText:
     'WanderLingo · Trợ lý Du lịch & Khách sạn Đa ngôn ngữ · Tích hợp Google Translate',
