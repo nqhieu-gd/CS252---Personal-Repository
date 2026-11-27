@@ -25,7 +25,19 @@ if (-not (Test-Path $VenvPython)) {
     & (Join-Path $BackendDir ".venv\Scripts\pip.exe") install -r (Join-Path $BackendDir "requirements.txt")
 }
 
-if ($Rebuild -or -not (Test-Path $DistIndex)) {
+$NeedsBuild = $Rebuild -or -not (Test-Path $DistIndex)
+if (-not $NeedsBuild) {
+    $DistTime = (Get-Item $DistIndex).LastWriteTimeUtc
+    $NewerSrc = Get-ChildItem -Path (Join-Path $FrontendDir "src"), (Join-Path $FrontendDir "index.html") -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.LastWriteTimeUtc -gt $DistTime } |
+        Select-Object -First 1
+    if ($null -ne $NewerSrc) {
+        Write-Host "[WanderLingo] Detected newer frontend source files; rebuilding dist/..." -ForegroundColor Yellow
+        $NeedsBuild = $true
+    }
+}
+
+if ($NeedsBuild) {
     Write-Host "[WanderLingo] Building React + TypeScript frontend..." -ForegroundColor Cyan
     Push-Location $FrontendDir
     if (-not (Test-Path (Join-Path $FrontendDir "node_modules"))) {
