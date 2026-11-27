@@ -45,6 +45,12 @@ html[data-theme="light"] {
   --accent-warm-hover: #ab3515;
   --accent-warm-soft: #fdebe5;
 
+  /* Brighter Sunlit Folio Box-Lining Palette (Light Mode) */
+  --folio-border-start: #a78bfa;
+  --folio-border-mid: #22d3ee;
+  --folio-border-end: #fb7155;
+  --folio-border-fade: #ddd6f3;
+
   --status-good-bg: #dcfce7;
   --status-good-text: #166534;
   --status-caution-bg: #fef3c7;
@@ -101,6 +107,12 @@ html[data-theme="dark"] {
   --accent-warm: #eb6b47;
   --accent-warm-hover: #d85632;
   --accent-warm-soft: rgba(235, 107, 71, 0.17);
+
+  /* Twilight Folio Box-Lining Palette (Dark Mode) */
+  --folio-border-start: #7c5cff;
+  --folio-border-mid: #38d9f5;
+  --folio-border-end: #eb6b47;
+  --folio-border-fade: #383c57;
 
   --status-good-bg: rgba(34, 197, 94, 0.16);
   --status-good-text: #86efac;
@@ -167,8 +179,8 @@ button:disabled {
   border-radius: 1.5rem;
   background:
     linear-gradient(var(--bg-surface-solid), var(--bg-surface-solid)) padding-box,
-    linear-gradient(180deg, transparent 0%, var(--border-subtle) 44%, var(--border-subtle) 100%) border-box,
-    linear-gradient(90deg, var(--btn-primary-bg) 0%, var(--accent-cyan) 50%, var(--accent-warm) 100%) border-box;
+    linear-gradient(180deg, transparent 0%, var(--folio-border-fade) 44%, var(--folio-border-fade) 100%) border-box,
+    linear-gradient(90deg, var(--folio-border-start) 0%, var(--folio-border-mid) 50%, var(--folio-border-end) 100%) border-box;
   box-shadow: var(--shadow-card);
 }
 
