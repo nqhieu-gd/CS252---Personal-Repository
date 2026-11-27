@@ -75,7 +75,7 @@ powershell -ExecutionPolicy Bypass -File "F:\Git\nqhieu-gd-local\CS252---Persona
 
 1. **Startup & Architecture Proof (0:00–0:30):**
    - Run `start.ps1` and let it automatically open `http://127.0.0.1:8000` (and optionally show `http://127.0.0.1:8000/docs`).
-   - Point out the top bar showing **Engine Ready**, the **Engine** settings modal (`py-googletrans v4.0.2`, Cache Hits, Endpoint Routing Preset selector: `Standard`, `Direct API`, `Multi-Region Failover`), **EN / VI** toggle, and **Light Theme / Dark Theme** toggle.
+   - Point out the clean header with **EN / VI** and **Light Theme / Dark Theme** toggles, and optionally click **Routing & Cache** in the footer to show `py-googletrans v4.0.2`, Cache Hits, and automatic/manual Endpoint Routing Presets (`Standard`, `Direct API`, `Multi-Region Failover`).
 2. **Tab 1 — Translator & Common English Travel Phrasebook (0:30–1:25):**
    - Translate `"Hpw do I reverve a room?"` into Vietnamese (`From = Auto-Detect`) to show automatic source-language reporting (`Translated from: English`) and the **Spelling & Grammar Fixing Recommendation (`"Did you mean: How do I reserve a room?"`)**, then click **Apply & Translate**.
    - Show **Verify Meaning**, **Show Card** (the high-contrast Show-to-Local Conversation Card dialog), **Common English Travel Phrasebook** (clicking a `...` fill-in template automatically selects `...` for quick customization), and **Saved Phrases** (single-item delete + **Export Phrase Sheet (`.txt`)**).
