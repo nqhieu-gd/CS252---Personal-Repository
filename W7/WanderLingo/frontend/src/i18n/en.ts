@@ -109,6 +109,12 @@ export const en = {
     'Write your reply in your working language (press Enter to translate & send)...',
   translateReplyBtn: 'Send Translated Reply',
   sentReplyHeader: 'You → Translated for',
+  replyAsHostTab: 'Reply as Host',
+  simulateGuestTab: 'Simulate Guest Follow-Up',
+  guestFollowUpPlaceholder:
+    'Type a follow-up message from the guest in any language (press Enter)...',
+  sendGuestFollowUpBtn: 'Add Guest Message',
+  footerRoutingLink: 'Routing & Cache',
   footerText:
     'WanderLingo · Multilingual Travel & Hospitality Companion · Powered by Google Translate',
 } as const;
