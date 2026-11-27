@@ -50,9 +50,9 @@ interface LiveTranslatorPanelProps {
 const QUICK_SRC_CHIPS = ['auto', 'en', 'vi', 'ja', 'ko'];
 const QUICK_DEST_CHIPS = ['vi', 'en', 'ja', 'ko', 'fr'];
 const TICKET_ACCENTS = [
-  'var(--btn-primary-bg)',
-  'var(--accent-cyan)',
-  'var(--accent-warm)',
+  'var(--line-accent-1)',
+  'var(--line-accent-2)',
+  'var(--line-accent-3)',
 ];
 
 export const LiveTranslatorPanel: React.FC<LiveTranslatorPanelProps> = ({
