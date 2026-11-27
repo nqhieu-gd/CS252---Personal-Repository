@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Check,
   Copy,
+  CornerUpLeft,
   Loader2,
   MessageSquarePlus,
   MessageSquareText,
@@ -31,21 +32,30 @@ interface InquiryDeskPanelProps {
   onOperationComplete: () => void;
 }
 
+interface GuestQuestionItem {
+  msgId: string;
+  text: string;
+  source_lang?: string;
+  suggested_reply_en?: string;
+}
+
 interface SentReplyMessage extends TravelInquiryReplyResponse {
   replyId: string;
+  replyToMsgId: string;
+  replyToSnippet: string;
   sentAt: string;
 }
 
 interface PersistedConciergeState {
-  customInquiries: SampleTravelInquiry[];
+  customThreads: SampleTravelInquiry[];
+  extraGuestMessages: Record<string, GuestQuestionItem[]>;
   selectedId: string;
   staffLang: string;
   processedCache: Record<string, TravelInquiryResponse>;
   sentRepliesMap: Record<string, SentReplyMessage[]>;
-  replyLangOverrides: Record<string, string>;
 }
 
-const CONCIERGE_STORAGE_KEY = 'wanderlingo_concierge_session_v1';
+const CONCIERGE_STORAGE_KEY = 'wanderlingo_concierge_session_v2';
 
 function loadPersistedConciergeState(): Partial<PersistedConciergeState> {
   try {
@@ -69,8 +79,11 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
   const { t } = useI18n();
   const initialSaved = useRef<Partial<PersistedConciergeState>>(loadPersistedConciergeState());
 
-  const [customInquiries, setCustomInquiries] = useState<SampleTravelInquiry[]>(
-    () => initialSaved.current.customInquiries ?? [],
+  const [customThreads, setCustomThreads] = useState<SampleTravelInquiry[]>(
+    () => initialSaved.current.customThreads ?? [],
+  );
+  const [extraGuestMessages, setExtraGuestMessages] = useState<Record<string, GuestQuestionItem[]>>(
+    () => initialSaved.current.extraGuestMessages ?? {},
   );
   const [editedTextMap, setEditedTextMap] = useState<Record<string, string>>({});
   const [selectedId, setSelectedId] = useState<string>(
@@ -83,10 +96,9 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
   const [sentRepliesMap, setSentRepliesMap] = useState<Record<string, SentReplyMessage[]>>(
     () => initialSaved.current.sentRepliesMap ?? {},
   );
-  const [replyLangOverrides, setReplyLangOverrides] = useState<Record<string, string>>(
-    () => initialSaved.current.replyLangOverrides ?? {},
-  );
 
+  // V5 Feedback: Replies must target 1 exact guest message; reply language comes strictly from THAT message
+  const [replyTargetMsgId, setReplyTargetMsgId] = useState<string | null>(null);
   const [replyInput, setReplyInput] = useState('');
   const [isLoadingActive, setIsLoadingActive] = useState(false);
   const [isSendingReply, setIsSendingReply] = useState(false);
@@ -95,65 +107,71 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
   const [newInquiryText, setNewInquiryText] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  const replyInputRef = useRef<HTMLInputElement>(null);
   const onErrorRef = useRef(onError);
   const onCompleteRef = useRef(onOperationComplete);
   onErrorRef.current = onError;
   onCompleteRef.current = onOperationComplete;
 
-  // Combine user-created inquiries + preloaded sample guest inquiries
-  const inquiries: SampleTravelInquiry[] = [...customInquiries, ...sampleInquiries].map((item) =>
-    editedTextMap[item.id] ? { ...item, inquiry_text: editedTextMap[item.id] } : item,
-  );
+  const threads: SampleTravelInquiry[] = [...customThreads, ...sampleInquiries];
 
-  // Ensure a valid thread is selected once sampleInquiries loads
   useEffect(() => {
-    if (!selectedId && inquiries.length > 0) {
-      setSelectedId(inquiries[0].id);
+    if (!selectedId && threads.length > 0) {
+      setSelectedId(threads[0].id);
     }
-  }, [selectedId, inquiries.length]);
+  }, [selectedId, threads.length]);
 
-  // V4 Feedback #4: Persist replies, custom inquiries, and translated cache across tab switches
+  // Clear targeted message when switching threads so replies never go to a different guest
+  useEffect(() => {
+    setReplyTargetMsgId(null);
+    setReplyInput('');
+  }, [selectedId]);
+
+  // Persist Concierge Desk state across tab switches
   useEffect(() => {
     try {
       const payload: PersistedConciergeState = {
-        customInquiries,
+        customThreads,
+        extraGuestMessages,
         selectedId,
         staffLang,
         processedCache,
         sentRepliesMap,
-        replyLangOverrides,
       };
       sessionStorage.setItem(CONCIERGE_STORAGE_KEY, JSON.stringify(payload));
     } catch {
       // ignore storage quota issues
     }
   }, [
-    customInquiries,
+    customThreads,
+    extraGuestMessages,
     selectedId,
     staffLang,
     processedCache,
     sentRepliesMap,
-    replyLangOverrides,
   ]);
 
-  const activeInquiry =
-    inquiries.find((i) => i.id === selectedId) ?? inquiries[0] ?? null;
+  const activeThread = threads.find((th) => th.id === selectedId) ?? threads[0] ?? null;
 
-  const makeCacheKey = (id: string, lang: string, text: string) =>
-    `${servicePreset}:${lang}:${id}:${text}`;
+  const getThreadMessages = (thread: SampleTravelInquiry): GuestQuestionItem[] => {
+    const initialMsgId = `${thread.id}::msg-0`;
+    const first: GuestQuestionItem = {
+      msgId: initialMsgId,
+      text: editedTextMap[initialMsgId] ?? thread.inquiry_text,
+      source_lang: thread.source_lang,
+      suggested_reply_en: thread.suggested_reply_en,
+    };
+    const extras = (extraGuestMessages[thread.id] ?? []).map((m) =>
+      editedTextMap[m.msgId] ? { ...m, text: editedTextMap[m.msgId] } : m,
+    );
+    return [first, ...extras];
+  };
 
-  const activeCacheKey = activeInquiry
-    ? makeCacheKey(activeInquiry.id, staffLang, activeInquiry.inquiry_text)
-    : '';
-  const activeProcessed = activeCacheKey ? processedCache[activeCacheKey] : undefined;
-  const activeSentReplies = activeInquiry ? (sentRepliesMap[activeInquiry.id] ?? []) : [];
+  const activeMessages = activeThread ? getThreadMessages(activeThread) : [];
+  const activeSentReplies = activeThread ? (sentRepliesMap[activeThread.id] ?? []) : [];
 
-  // V4 Feedback #3: Never lock replies rigidly to the first message's language — allow explicit selection
-  const defaultReplyLang =
-    activeProcessed?.detected_lang ?? activeInquiry?.source_lang ?? 'en';
-  const activeReplyLang = activeInquiry
-    ? (replyLangOverrides[activeInquiry.id] ?? defaultReplyLang)
-    : 'en';
+  const makeCacheKey = (msgId: string, lang: string, text: string) =>
+    `${servicePreset}:${lang}:${msgId}:${text}`;
 
   const getLangName = (code: string) => {
     const found =
@@ -162,93 +180,150 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
     return found ? found.name : code.toUpperCase();
   };
 
-  // Lazy single-thread processing (zero burst on mount; zero network call when already same language)
+  // Lazy processing for uncached guest messages in the currently active thread only
   useEffect(() => {
-    if (!activeInquiry || activeProcessed) return;
+    if (!activeThread) return;
+    const msgs = getThreadMessages(activeThread);
+    const localSameUpdates: Record<string, TravelInquiryResponse> = {};
+    const pendingRemote: Array<{ msg: GuestQuestionItem; cacheKey: string }> = [];
 
-    if (activeInquiry.source_lang && activeInquiry.source_lang === staffLang) {
-      const localSame: TravelInquiryResponse = {
-        original_text: activeInquiry.inquiry_text,
-        detected_lang: activeInquiry.source_lang,
-        detected_language: getLangName(activeInquiry.source_lang),
-        confidence: 1.0,
-        target_lang: staffLang,
-        target_language: getLangName(staffLang),
-        translated_text: activeInquiry.inquiry_text,
-        pronunciation: null,
-        did_you_mean: null,
-        needs_translation: false,
-        cached: true,
-        service_preset: servicePreset,
-        latency_ms: 0,
-      };
-      setProcessedCache((prev) => ({ ...prev, [activeCacheKey]: localSame }));
-      return;
+    for (const msg of msgs) {
+      const ck = makeCacheKey(msg.msgId, staffLang, msg.text);
+      if (processedCache[ck]) continue;
+
+      if (msg.source_lang && msg.source_lang === staffLang) {
+        localSameUpdates[ck] = {
+          original_text: msg.text,
+          detected_lang: msg.source_lang,
+          detected_language: getLangName(msg.source_lang),
+          confidence: 1.0,
+          target_lang: staffLang,
+          target_language: getLangName(staffLang),
+          translated_text: msg.text,
+          pronunciation: null,
+          did_you_mean: null,
+          needs_translation: false,
+          cached: true,
+          service_preset: servicePreset,
+          latency_ms: 0,
+        };
+      } else {
+        pendingRemote.push({ msg, cacheKey: ck });
+      }
     }
+
+    if (Object.keys(localSameUpdates).length > 0) {
+      setProcessedCache((prev) => ({ ...prev, ...localSameUpdates }));
+    }
+    if (pendingRemote.length === 0) return;
 
     const controller = new AbortController();
     setIsLoadingActive(true);
     onErrorRef.current(null);
 
-    apiClient
-      .processTravelInquiry(
-        {
-          inquiryText: activeInquiry.inquiry_text,
-          targetLanguage: staffLang,
-          servicePreset,
-        },
-        controller.signal,
-      )
-      .then((res) => {
+    const runSequentially = async () => {
+      try {
+        for (const item of pendingRemote) {
+          if (controller.signal.aborted) return;
+          const res = await apiClient.processTravelInquiry(
+            {
+              inquiryText: item.msg.text,
+              targetLanguage: staffLang,
+              servicePreset,
+            },
+            controller.signal,
+          );
+          if (!controller.signal.aborted) {
+            setProcessedCache((prev) => ({ ...prev, [item.cacheKey]: res }));
+          }
+        }
         if (!controller.signal.aborted) {
-          setProcessedCache((prev) => ({ ...prev, [activeCacheKey]: res }));
           onCompleteRef.current();
         }
-      })
-      .catch((err: unknown) => {
+      } catch (err: unknown) {
         if ((err as Error).name === 'AbortError' || controller.signal.aborted) return;
         const msg =
           err instanceof ApiClientError
             ? `${err.message} (${err.code})`
             : 'Failed to translate selected message.';
         onErrorRef.current(msg);
-      })
-      .finally(() => {
+      } finally {
         if (!controller.signal.aborted) {
           setIsLoadingActive(false);
         }
-      });
+      }
+    };
 
+    void runSequentially();
     return () => controller.abort();
-  }, [activeInquiry, activeCacheKey, activeProcessed, staffLang, servicePreset]);
+  }, [activeThread?.id, activeMessages.length, staffLang, servicePreset, editedTextMap]);
 
   const handleAddCustomInquiry = () => {
     const cleaned = newInquiryText.trim();
     if (!cleaned) return;
-    const newId = `inq-custom-${Date.now()}`;
-    const newItem: SampleTravelInquiry = {
-      id: newId,
-      guest_name: newGuestName.trim() || 'International Guest',
-      channel: 'Live Chat',
-      badge: 'New Message',
-      inquiry_text: cleaned,
-      suggested_reply_en:
-        'Thank you for reaching out! We have checked this and arranged everything for your visit.',
-    };
-    setCustomInquiries((prev) => [newItem, ...prev]);
-    setSelectedId(newId);
+    const cleanName = newGuestName.trim();
+
+    // If sender name matches an existing guest thread, append as a new question in that thread
+    const existingMatch = cleanName
+      ? threads.find((th) => th.guest_name.toLowerCase() === cleanName.toLowerCase())
+      : undefined;
+
+    if (existingMatch) {
+      const nextMsg: GuestQuestionItem = {
+        msgId: `${existingMatch.id}::msg-${Date.now()}`,
+        text: cleaned,
+      };
+      setExtraGuestMessages((prev) => ({
+        ...prev,
+        [existingMatch.id]: [...(prev[existingMatch.id] ?? []), nextMsg],
+      }));
+      setSelectedId(existingMatch.id);
+    } else {
+      const newId = `inq-custom-${Date.now()}`;
+      const newItem: SampleTravelInquiry = {
+        id: newId,
+        guest_name: cleanName || 'International Guest',
+        channel: 'Live Chat',
+        badge: 'New Message',
+        inquiry_text: cleaned,
+        suggested_reply_en:
+          'Thank you for reaching out! We have checked this and arranged everything for your visit.',
+      };
+      setCustomThreads((prev) => [newItem, ...prev]);
+      setSelectedId(newId);
+    }
+
     setNewGuestName('');
     setNewInquiryText('');
     setComposerOpen(false);
   };
 
-  const handleApplyTypoFix = (inq: SampleTravelInquiry, corrected: string) => {
-    setEditedTextMap((prev) => ({ ...prev, [inq.id]: corrected }));
+  const handleApplyTypoFix = (msgId: string, corrected: string) => {
+    setEditedTextMap((prev) => ({ ...prev, [msgId]: corrected }));
   };
 
-  const handleSendTranslatedReply = async () => {
+  const replyTargetMsg = replyTargetMsgId
+    ? activeMessages.find((m) => m.msgId === replyTargetMsgId) ?? null
+    : null;
+  const replyTargetProcessed = replyTargetMsg
+    ? processedCache[makeCacheKey(replyTargetMsg.msgId, staffLang, replyTargetMsg.text)]
+    : undefined;
+  const replyTargetLangCode =
+    replyTargetProcessed?.detected_lang ?? replyTargetMsg?.source_lang ?? null;
+  const replyTargetLangName =
+    replyTargetProcessed?.detected_language ??
+    (replyTargetLangCode ? getLangName(replyTargetLangCode) : '');
+
+  const handleStartReplyToMessage = (msgId: string) => {
+    setReplyTargetMsgId(msgId);
+    window.setTimeout(() => {
+      replyInputRef.current?.focus();
+    }, 20);
+  };
+
+  const handleSendTargetedReply = async () => {
     const draft = replyInput.trim();
-    if (!draft || !activeInquiry) return;
+    if (!draft || !activeThread || !replyTargetMsg || !replyTargetLangCode) return;
     onError(null);
     setIsSendingReply(true);
 
@@ -256,19 +331,25 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
       const res = await apiClient.translateInquiryReply({
         replyText: draft,
         staffLanguage: staffLang,
-        guestLanguage: activeReplyLang,
+        guestLanguage: replyTargetLangCode,
         servicePreset,
       });
       const message: SentReplyMessage = {
         ...res,
         replyId: `rep-${Date.now()}`,
+        replyToMsgId: replyTargetMsg.msgId,
+        replyToSnippet:
+          replyTargetMsg.text.length > 72
+            ? `${replyTargetMsg.text.slice(0, 72)}...`
+            : replyTargetMsg.text,
         sentAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setSentRepliesMap((prev) => ({
         ...prev,
-        [activeInquiry.id]: [...(prev[activeInquiry.id] ?? []), message],
+        [activeThread.id]: [...(prev[activeThread.id] ?? []), message],
       }));
       setReplyInput('');
+      setReplyTargetMsgId(null);
       onOperationComplete();
     } catch (err) {
       const msg =
@@ -392,14 +473,14 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
         )}
       </section>
 
-      {/* Split-Pane Master-Detail 2-Way Hospitality Inbox */}
-      <section className="wl-folio overflow-visible">
+      {/* Split-Pane Master-Detail Hospitality Inbox */}
+      <section className="wl-folio overflow-hidden">
         <div className="grid min-h-[540px] grid-cols-1 lg:grid-cols-[340px_1.5px_1fr]">
-          {/* LEFT PANE: Sample & Added Guest Conversation List */}
-          <div className="flex flex-col rounded-t-[calc(1.5rem-3px)] bg-[var(--bg-surface-muted)]/55 lg:rounded-tr-none lg:rounded-bl-[calc(1.5rem-3px)]">
+          {/* LEFT PANE: Guest Conversation List */}
+          <div className="flex flex-col bg-[var(--bg-surface-muted)]/55">
             <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3.5">
               <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                {t('inboxListTitle')} ({inquiries.length})
+                {t('inboxListTitle')} ({threads.length})
               </span>
               {isLoadingActive && (
                 <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--accent-primary)]">
@@ -410,18 +491,20 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
             </div>
 
             <div className="max-h-[300px] divide-y divide-[var(--border-subtle)] overflow-y-auto lg:max-h-[560px]">
-              {inquiries.map((inq) => {
-                const isSelected = activeInquiry?.id === inq.id;
-                const cachedThread =
-                  processedCache[makeCacheKey(inq.id, staffLang, inq.inquiry_text)];
-                const langBadge = cachedThread?.detected_lang ?? inq.source_lang;
-                const replyCount = (sentRepliesMap[inq.id] ?? []).length;
+              {threads.map((th) => {
+                const isSelected = activeThread?.id === th.id;
+                const thMsgs = getThreadMessages(th);
+                const latestMsg = thMsgs[thMsgs.length - 1];
+                const cachedLatest =
+                  processedCache[makeCacheKey(latestMsg.msgId, staffLang, latestMsg.text)];
+                const langBadge = cachedLatest?.detected_lang ?? latestMsg.source_lang;
+                const replyCount = (sentRepliesMap[th.id] ?? []).length;
 
                 return (
                   <button
-                    key={inq.id}
+                    key={th.id}
                     type="button"
-                    onClick={() => setSelectedId(inq.id)}
+                    onClick={() => setSelectedId(th.id)}
                     className={`flex w-full items-start gap-3 p-4 text-left transition ${
                       isSelected
                         ? 'border-l-4 border-l-[var(--btn-primary-bg)] bg-[var(--bg-surface-solid)]'
@@ -436,13 +519,13 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
                           : 'bg-[var(--accent-soft)] text-[var(--accent-primary)]'
                       }`}
                     >
-                      {getInitials(inq.guest_name)}
+                      {getInitials(th.guest_name)}
                     </div>
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate font-heading text-sm font-bold text-[var(--text-primary)]">
-                          {inq.guest_name}
+                          {th.guest_name}
                         </span>
                         {langBadge && (
                           <span className="shrink-0 rounded-md bg-[var(--accent-cyan-soft)] px-2 py-0.5 font-mono text-[11px] font-bold uppercase text-[var(--accent-cyan)]">
@@ -452,7 +535,7 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
                       </div>
 
                       <div className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
-                        <span className="truncate">{inq.channel}</span>
+                        <span className="truncate">{th.channel}</span>
                         {replyCount > 0 && (
                           <span className="rounded-full bg-[var(--accent-warm-soft)] px-2 py-0.2 text-[11px] font-bold text-[var(--accent-warm)]">
                             {replyCount}
@@ -461,7 +544,7 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
                       </div>
 
                       <p className="mt-1 line-clamp-2 text-xs font-medium text-[var(--text-secondary)]">
-                        {cachedThread ? cachedThread.translated_text : inq.inquiry_text}
+                        {cachedLatest ? cachedLatest.translated_text : latestMsg.text}
                       </p>
                     </div>
                   </button>
@@ -473,212 +556,282 @@ export const InquiryDeskPanel: React.FC<InquiryDeskPanelProps> = ({
           {/* CENTER SPINE */}
           <div className="h-[1.5px] w-full bg-[var(--border-subtle)] lg:h-auto lg:w-[1.5px]" />
 
-          {/* RIGHT PANE: Active Conversation Thread & Host Reply Composer */}
-          {activeInquiry && (
-            <div className="flex flex-col justify-between rounded-b-[calc(1.5rem-3px)] bg-[var(--bg-surface-solid)] lg:rounded-tr-[calc(1.5rem-3px)] lg:rounded-bl-none">
+          {/* RIGHT PANE: Active Thread with By-Question Reply Targeting */}
+          {activeThread && (
+            <div className="flex flex-col justify-between bg-[var(--bg-surface-solid)]">
               {/* Thread Header */}
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-5 py-4 sm:px-6">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-heading text-xl font-extrabold text-[var(--text-primary)]">
-                    {activeInquiry.guest_name}
+                    {activeThread.guest_name}
                   </h3>
                   <span className="rounded-md bg-[var(--bg-surface-muted)] px-2.5 py-0.5 text-xs font-semibold text-[var(--text-secondary)]">
-                    {activeInquiry.channel}
+                    {activeThread.channel}
                   </span>
                   <span className="rounded-md bg-[var(--accent-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--accent-primary)]">
-                    {activeInquiry.badge}
+                    {activeThread.badge}
                   </span>
                 </div>
-
-                {activeProcessed && (
-                  <span className="rounded-md bg-[var(--accent-cyan-soft)] px-2.5 py-1 text-xs font-bold text-[var(--accent-cyan)]">
-                    {activeProcessed.detected_language} ({activeProcessed.detected_lang})
-                    {activeProcessed.confidence !== null
-                      ? ` · ${Math.round(activeProcessed.confidence * 100)}%`
-                      : ''}
-                  </span>
-                )}
               </div>
 
-              {/* Conversation Stream */}
+              {/* Messages & Targeted Replies Stream */}
               <div className="flex-1 space-y-5 overflow-y-auto p-5 sm:p-6">
-                {/* Incoming Guest Bubble (V4 Feedback #5: print exact message cleanly when same language — no "skipped" banner) */}
-                <div className="max-w-2xl space-y-2.5">
-                  <div className="rounded-tl-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] p-4 sm:p-5">
-                    <div className="mb-1.5 flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                      <span>{activeInquiry.guest_name}</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleSpeak(
-                            activeInquiry.inquiry_text,
-                            activeProcessed?.detected_lang ?? activeInquiry.source_lang ?? 'en',
-                          )
-                        }
-                        className="inline-flex items-center gap-1 rounded-md bg-[var(--bg-surface-solid)] px-2.5 py-1 text-xs font-bold text-[var(--text-primary)] transition hover:text-[var(--accent-cyan)]"
-                      >
-                        <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
-                        {t('speakBtn')}
-                      </button>
-                    </div>
+                {activeMessages.map((msg) => {
+                  const proc = processedCache[makeCacheKey(msg.msgId, staffLang, msg.text)];
+                  const msgLang = proc?.detected_lang ?? msg.source_lang ?? 'en';
+                  const msgLangLabel = proc?.detected_language ?? getLangName(msgLang);
+                  const isTargeted = replyTargetMsgId === msg.msgId;
+                  const repliesForThisMsg = activeSentReplies.filter(
+                    (r) => r.replyToMsgId === msg.msgId,
+                  );
 
-                    <p className="text-base font-medium leading-relaxed text-[var(--text-primary)] sm:text-lg">
-                      “{activeInquiry.inquiry_text}”
-                    </p>
-
-                    {activeProcessed?.did_you_mean && (
-                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border-l-4 border-[var(--accent-warm)] bg-[var(--accent-warm-soft)] px-3 py-2 text-xs">
-                        <span className="flex items-center gap-1.5 text-[var(--text-primary)]">
-                          <Wand2
-                            className="h-3.5 w-3.5 text-[var(--accent-warm)]"
-                            aria-hidden="true"
-                          />
-                          {t('didYouMeanPrefix')} <strong>{activeProcessed.did_you_mean}</strong>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleApplyTypoFix(activeInquiry, activeProcessed.did_you_mean!)
-                          }
-                          className="rounded-full bg-[var(--accent-warm)] px-3 py-1 font-bold text-white"
+                  return (
+                    <div key={msg.msgId} className="space-y-3">
+                      {/* Guest Question Bubble (Left-Aligned) */}
+                      <div className="max-w-2xl">
+                        <div
+                          className={`rounded-tl-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl border p-4 transition sm:p-5 ${
+                            isTargeted
+                              ? 'border-[var(--accent-primary)] bg-[var(--accent-soft)]/50 shadow-sm'
+                              : 'border-[var(--border-subtle)] bg-[var(--bg-surface-muted)]'
+                          }`}
                         >
-                          {t('applySuggestionBtn')}
-                        </button>
-                      </div>
-                    )}
-
-                    {isLoadingActive && !activeProcessed ? (
-                      <div className="mt-3.5 flex items-center gap-2 border-t border-[var(--border-subtle)] pt-3.5 text-sm font-semibold text-[var(--accent-primary)]">
-                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                        <span>{t('translatingBtn')}</span>
-                      </div>
-                    ) : (
-                      activeProcessed?.needs_translation && (
-                        <div className="mt-3.5 border-t border-[var(--border-subtle)] pt-3.5">
-                          <div className="rounded-xl border-l-4 border-[var(--line-accent-1)] bg-[var(--bg-surface-solid)] p-3.5">
-                            <div className="mb-1 text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)]">
-                              {t('translatedForYouLabel')} ({activeProcessed.target_language})
+                          <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                                {activeThread.guest_name}
+                              </span>
+                              <span className="rounded-md bg-[var(--accent-cyan-soft)] px-2 py-0.5 font-bold text-[var(--accent-cyan)]">
+                                {msgLangLabel} ({msgLang})
+                                {proc?.confidence !== null && proc?.confidence !== undefined
+                                  ? ` · ${Math.round(proc.confidence * 100)}%`
+                                  : ''}
+                              </span>
                             </div>
-                            <p className="text-base font-bold leading-relaxed text-[var(--text-primary)] sm:text-lg">
-                              {activeProcessed.translated_text}
+
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleSpeak(msg.text, msgLang)}
+                                className="inline-flex items-center gap-1 rounded-md bg-[var(--bg-surface-solid)] px-2.5 py-1 text-xs font-bold text-[var(--text-primary)] transition hover:text-[var(--accent-cyan)]"
+                              >
+                                <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                {t('speakBtn')}
+                              </button>
+
+                              {/* V5 Feedback: Per-question Reply trigger that locks reply language to THIS exact message */}
+                              <button
+                                type="button"
+                                disabled={!proc && isLoadingActive}
+                                onClick={() => handleStartReplyToMessage(msg.msgId)}
+                                className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-bold transition disabled:opacity-45 ${
+                                  isTargeted
+                                    ? 'wl-btn-primary'
+                                    : 'bg-[var(--bg-surface-solid)] text-[var(--accent-primary)] hover:bg-[var(--btn-primary-bg)] hover:text-white'
+                                }`}
+                              >
+                                <CornerUpLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                                {t('replyToMessageBtn')}
+                              </button>
+                            </div>
+                          </div>
+
+                          <p className="text-base font-medium leading-relaxed text-[var(--text-primary)] sm:text-lg">
+                            “{msg.text}”
+                          </p>
+
+                          {proc?.did_you_mean && (
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border-l-4 border-[var(--accent-warm)] bg-[var(--accent-warm-soft)] px-3 py-2 text-xs">
+                              <span className="flex items-center gap-1.5 text-[var(--text-primary)]">
+                                <Wand2
+                                  className="h-3.5 w-3.5 text-[var(--accent-warm)]"
+                                  aria-hidden="true"
+                                />
+                                {t('didYouMeanPrefix')} <strong>{proc.did_you_mean}</strong>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleApplyTypoFix(msg.msgId, proc.did_you_mean!)}
+                                className="rounded-full bg-[var(--accent-warm)] px-3 py-1 font-bold text-white"
+                              >
+                                {t('applySuggestionBtn')}
+                              </button>
+                            </div>
+                          )}
+
+                          {isLoadingActive && !proc ? (
+                            <div className="mt-3.5 flex items-center gap-2 border-t border-[var(--border-subtle)] pt-3.5 text-sm font-semibold text-[var(--accent-primary)]">
+                              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                              <span>{t('translatingBtn')}</span>
+                            </div>
+                          ) : (
+                            proc?.needs_translation && (
+                              <div className="mt-3.5 border-t border-[var(--border-subtle)] pt-3.5">
+                                <div className="rounded-xl border-l-4 border-[var(--line-accent-1)] bg-[var(--bg-surface-solid)] p-3.5">
+                                  <div className="mb-1 text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)]">
+                                    {t('translatedForYouLabel')} ({proc.target_language})
+                                  </div>
+                                  <p className="text-base font-bold leading-relaxed text-[var(--text-primary)] sm:text-lg">
+                                    {proc.translated_text}
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Targeted Replies Linked to This Exact Guest Question */}
+                      {repliesForThisMsg.map((rep) => (
+                        <div key={rep.replyId} className="ml-auto max-w-2xl">
+                          <div className="rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl border border-[var(--accent-primary)]/35 bg-[var(--bg-surface-tint)] p-4 sm:p-5">
+                            {/* Quoted Message Context */}
+                            <div className="mb-2.5 flex items-center gap-2 rounded-lg border-l-2 border-[var(--accent-cyan)] bg-[var(--bg-surface-solid)]/80 px-3 py-1.5 text-xs text-[var(--text-muted)]">
+                              <CornerUpLeft className="h-3.5 w-3.5 shrink-0 text-[var(--accent-cyan)]" aria-hidden="true" />
+                              <span className="truncate italic">“{rep.replyToSnippet}”</span>
+                            </div>
+
+                            <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                              <span className="font-bold text-[var(--accent-primary)]">
+                                {t('sentReplyHeader')} {rep.dest_name} ({rep.dest})
+                              </span>
+                              <span className="font-mono text-[var(--text-muted)]">
+                                {rep.sentAt}
+                              </span>
+                            </div>
+
+                            <p className="font-heading text-lg font-bold leading-relaxed text-[var(--text-primary)] sm:text-xl">
+                              {rep.translated_reply}
                             </p>
+
+                            {rep.pronunciation && (
+                              <p className="mt-1 font-mono text-xs text-[var(--accent-cyan)]">
+                                {rep.pronunciation}
+                              </p>
+                            )}
+
+                            {rep.translated_reply.trim() !== rep.staff_text.trim() && (
+                              <p className="mt-2.5 border-t border-[var(--border-subtle)] pt-2 text-xs text-[var(--text-secondary)]">
+                                {rep.staff_text}
+                              </p>
+                            )}
+
+                            <div className="mt-3 flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleSpeak(rep.translated_reply, rep.dest)}
+                                className="flex min-h-[34px] items-center gap-1 rounded-lg bg-[var(--bg-surface-solid)] px-3 py-1 text-xs font-bold text-[var(--text-primary)] transition hover:text-[var(--accent-cyan)]"
+                              >
+                                <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                <span>{t('speakBtn')}</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => void handleCopy(rep.replyId, rep.translated_reply)}
+                                className="flex min-h-[34px] items-center gap-1 rounded-lg bg-[var(--bg-surface-solid)] px-3 py-1 text-xs font-bold text-[var(--text-primary)] transition hover:text-[var(--accent-primary)]"
+                              >
+                                {copiedId === rep.replyId ? (
+                                  <>
+                                    <Check
+                                      className="h-3.5 w-3.5 text-emerald-500"
+                                      aria-hidden="true"
+                                    />
+                                    <span>{t('copiedBtn')}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                                    <span>{t('copyBtn')}</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      )
-                    )}
-                  </div>
-                </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
 
-                {/* Host Outgoing Translated Replies (Persisted in sessionStorage across tab switches) */}
-                {activeSentReplies.map((rep) => (
-                  <div key={rep.replyId} className="ml-auto max-w-2xl">
-                    <div className="rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl border border-[var(--accent-primary)]/35 bg-[var(--bg-surface-tint)] p-4 sm:p-5">
-                      <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <span className="font-bold text-[var(--accent-primary)]">
-                          {t('sentReplyHeader')} {rep.dest_name} ({rep.dest})
+              {/* Bottom By-Question Reply Bar (Only Active When Replying to 1 Exact Guest Message) */}
+              <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-surface-muted)]/60 p-4 sm:px-6">
+                {!replyTargetMsg ? (
+                  <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--bg-surface-solid)]/70 px-4 py-3 text-sm font-medium text-[var(--text-muted)]">
+                    <CornerUpLeft className="h-4 w-4 shrink-0 text-[var(--accent-primary)]" aria-hidden="true" />
+                    <span>{t('selectMessageToReplyHint')}</span>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Active Quoted Target Banner showing the automatic derived language */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border-l-4 border-[var(--accent-cyan)] bg-[var(--bg-surface-solid)] px-3.5 py-2 text-xs">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <span className="font-bold text-[var(--accent-cyan)]">
+                          {t('replyingToBannerPrefix')}:
                         </span>
-                        <span className="font-mono text-[var(--text-muted)]">{rep.sentAt}</span>
+                        <span className="truncate font-medium text-[var(--text-secondary)]">
+                          “{replyTargetMsg.text}”
+                        </span>
+                        {replyTargetLangCode && (
+                          <span className="shrink-0 rounded-md bg-[var(--accent-soft)] px-2 py-0.5 font-bold text-[var(--accent-primary)]">
+                            → {replyTargetLangName} ({replyTargetLangCode})
+                          </span>
+                        )}
                       </div>
 
-                      <p className="font-heading text-lg font-bold leading-relaxed text-[var(--text-primary)] sm:text-xl">
-                        {rep.translated_reply}
-                      </p>
-
-                      {rep.pronunciation && (
-                        <p className="mt-1 font-mono text-xs text-[var(--accent-cyan)]">
-                          {rep.pronunciation}
-                        </p>
-                      )}
-
-                      {rep.translated_reply.trim() !== rep.staff_text.trim() && (
-                        <p className="mt-2.5 border-t border-[var(--border-subtle)] pt-2 text-xs text-[var(--text-secondary)]">
-                          {rep.staff_text}
-                        </p>
-                      )}
-
-                      <div className="mt-3 flex items-center justify-end gap-2">
+                      <div className="flex items-center gap-2">
+                        {staffLang === 'en' && replyTargetMsg.suggested_reply_en && (
+                          <button
+                            type="button"
+                            onClick={() => setReplyInput(replyTargetMsg.suggested_reply_en!)}
+                            className="shrink-0 rounded-md bg-[var(--accent-soft)] px-2.5 py-1 font-bold text-[var(--accent-primary)] transition hover:bg-[var(--btn-primary-bg)] hover:text-white"
+                          >
+                            {t('useSuggestedReplyBtn')}
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => handleSpeak(rep.translated_reply, rep.dest)}
-                          className="flex min-h-[34px] items-center gap-1 rounded-lg bg-[var(--bg-surface-solid)] px-3 py-1 text-xs font-bold text-[var(--text-primary)] transition hover:text-[var(--accent-cyan)]"
+                          onClick={() => setReplyTargetMsgId(null)}
+                          aria-label="Cancel reply"
+                          className="flex h-6 w-6 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-surface-muted)] hover:text-[var(--text-primary)]"
                         >
-                          <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
-                          <span>{t('speakBtn')}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => void handleCopy(rep.replyId, rep.translated_reply)}
-                          className="flex min-h-[34px] items-center gap-1 rounded-lg bg-[var(--bg-surface-solid)] px-3 py-1 text-xs font-bold text-[var(--text-primary)] transition hover:text-[var(--accent-primary)]"
-                        >
-                          {copiedId === rep.replyId ? (
-                            <>
-                              <Check className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
-                              <span>{t('copiedBtn')}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-                              <span>{t('copyBtn')}</span>
-                            </>
-                          )}
+                          <X className="h-4 w-4" aria-hidden="true" />
                         </button>
                       </div>
                     </div>
+
+                    <div className="flex flex-col gap-2.5 sm:flex-row">
+                      <input
+                        ref={replyInputRef}
+                        type="text"
+                        value={replyInput}
+                        onChange={(e) => setReplyInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            void handleSendTargetedReply();
+                          }
+                        }}
+                        placeholder={t('conciergeReplyPlaceholder')}
+                        className="min-h-[46px] flex-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] px-4 py-2.5 text-base text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
+                      />
+                      <button
+                        type="button"
+                        disabled={isSendingReply || !replyInput.trim() || !replyTargetLangCode}
+                        onClick={() => void handleSendTargetedReply()}
+                        className="wl-btn-primary flex min-h-[46px] shrink-0 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold shadow-xs disabled:opacity-45"
+                      >
+                        <Send className="h-4 w-4" aria-hidden="true" />
+                        <span>
+                          {isSendingReply
+                            ? t('translatingBtn')
+                            : `${t('translateReplyBtn')} (${replyTargetLangName})`}
+                        </span>
+                      </button>
+                    </div>
                   </div>
-                ))}
-              </div>
-
-              {/* Bottom Host Reply Composer with Explicit Reply Language Selector (V4 Feedback #2 & #3) */}
-              <div className="rounded-b-[calc(1.5rem-3px)] border-t border-[var(--border-subtle)] bg-[var(--bg-surface-muted)]/60 p-4 sm:px-6 lg:rounded-bl-none">
-                <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-                  <div className="w-full sm:w-64">
-                    <LanguageCombobox
-                      label={t('replyLanguageLabel')}
-                      value={activeReplyLang}
-                      onChange={(code) =>
-                        setReplyLangOverrides((prev) => ({ ...prev, [activeInquiry.id]: code }))
-                      }
-                      travelLanguages={travelLanguages}
-                      allLanguages={allLanguages}
-                    />
-                  </div>
-
-                  {staffLang === 'en' && activeInquiry.suggested_reply_en && (
-                    <button
-                      type="button"
-                      onClick={() => setReplyInput(activeInquiry.suggested_reply_en)}
-                      className="min-h-[38px] shrink-0 rounded-lg bg-[var(--accent-soft)] px-3 py-1.5 text-xs font-bold text-[var(--accent-primary)] transition hover:bg-[var(--btn-primary-bg)] hover:text-white"
-                    >
-                      {t('useSuggestedReplyBtn')}
-                    </button>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-2.5 sm:flex-row">
-                  <input
-                    type="text"
-                    value={replyInput}
-                    onChange={(e) => setReplyInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        void handleSendTranslatedReply();
-                      }
-                    }}
-                    placeholder={t('conciergeReplyPlaceholder')}
-                    className="min-h-[46px] flex-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] px-4 py-2.5 text-base text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
-                  />
-                  <button
-                    type="button"
-                    disabled={isSendingReply || !replyInput.trim()}
-                    onClick={() => void handleSendTranslatedReply()}
-                    className="wl-btn-primary flex min-h-[46px] shrink-0 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold shadow-xs disabled:opacity-45"
-                  >
-                    <Send className="h-4 w-4" aria-hidden="true" />
-                    <span>{isSendingReply ? t('translatingBtn') : t('translateReplyBtn')}</span>
-                  </button>
-                </div>
+                )}
               </div>
             </div>
           )}
