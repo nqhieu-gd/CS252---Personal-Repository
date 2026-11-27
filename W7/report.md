@@ -172,11 +172,18 @@ During **Phase 0** live verification (`backend/scripts/smoke_googletrans.py`), f
 | `App.tsx` | `App` (`refreshHealth`, `handleClearCache`) | Root coordinator loading `/api/health`, `/api/languages`, and `/api/travel/samples` on startup with `AbortController` cleanup |
 
 ### 6.3 PowerShell Launcher (`W7/WanderLingo/start.ps1`)
-- Automated environment bootstrap (creates `backend/.venv` and installs `requirements.txt` if missing), builds `frontend/dist` (when missing or `-Rebuild` is passed), launches a background `/api/health` readiness poller that opens `http://127.0.0.1:8000` in the default web browser (`Start-Process`), and runs `uvicorn app.main:app`.
+- Automated environment bootstrap (creates `backend/.venv` and installs `requirements.txt` if missing), automatically rebuilds `frontend/dist` when missing or stale (`-Rebuild` also supported), launches a background `/api/health` readiness poller that opens `http://127.0.0.1:8000` in the default web browser (`Start-Process`), and runs `uvicorn app.main:app`.
 
 ---
 
-## 7. Verification & Automated Test Results
+## 7. Known Scope & Limitations
+
+- **No Online Real-Time Guest Message Receiver in Concierge Desk:** Because this project follows the **Google Translate API (`py-googletrans`)** track and intentionally omits **Firebase API** / external messaging webhooks (WhatsApp, Booking.com, or live WebSocket chat servers), the **Concierge Desk** does not receive live messages from remote online guests over the internet. Instead, it ships with preloaded multilingual sample guest inquiries (including the 4 exact examples from Section 6, Example 2 of the professor's tutorial) plus a local **New Message** input so evaluators can verify automatic language detection, translation into the staff working language, and explicit target-language selection for two-way concierge replies.
+- **Public Free Endpoint Rate Limits (`py-googletrans`):** Because `googletrans==4.0.2` communicates with Google Translate's unauthenticated public endpoint rather than a billed Google Cloud Translation API key, rapid uncached request bursts from one IP can trigger temporary upstream rate-limiting (`HTTP 302` / `429`). WanderLingo mitigates this with bounded TTL LRU caching, persistent HTTP/2 pooling, single-call `translate(src="auto")` metadata extraction, and global `Semaphore(2)` request pacing.
+
+---
+
+## 8. Verification & Automated Test Results
 
 - **Phase 0 Live Smoke Verification (`backend/scripts/smoke_googletrans.py`):** Verified live against Google Translate endpoints across `default`, `direct`, and `redundant` `service_urls` presets for single translation (`EN -> VI`), non-Latin pronunciation (`EN -> JA`, `EN -> ZH-CN`, `EN -> ZH-TW`), language detection (`ES`), and bulk translation.
 - **Backend Automated Test Suite (`pytest -v`):** **18 / 18 passed** (`tests/test_translator_service.py`, `tests/test_rate_limiter.py`, `tests/test_api_routes.py`), covering language alias normalization, polymorphic `detection.lang` and confidence normalization, single and multi-sentence pronunciation extraction, `did_you_mean` spelling/grammar correction, alternative phrasings and dictionary extraction, multi-target broadcast translation, TTL LRU caching, retry/failover on transient errors, skip-if-same-language in hotel reviews, `needs_translation` in travel inquiries, non-string preservation in destination guides, HTTP `422` validation, and HTTP `429` rate limiting with `Retry-After`.
